@@ -1,0 +1,17 @@
+# config.yaml
+
+# DATA, DATASET
+base_data_path: "../../data"
+dataset: none
+
+# INPUT
+num_pkts: 20
+fields: ['PL', 'IAT', 'DIR', 'WIN', 'FLG', 'TTL']
+all_fields: ['PL', 'IAT', 'DIR', 'WIN', 'FLG', 'TTL']
+is_flat: False
+pad_value_dir: 0.5
+pad_value: -1
+
+# EXPERIMENT
+seed: 0
+log_dir: "../results"
