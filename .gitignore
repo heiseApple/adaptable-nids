@@ -232,7 +232,13 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# User folders
-./results
+# User folders and files
+result*/
+test*/
+.vscode/
+*.pdf
+*.csv
+*.pkl
+*.npz
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,windows

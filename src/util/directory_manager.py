@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 
@@ -12,18 +13,9 @@ class DirectoryManager:
     def __init__(self, log_dir):
         if not hasattr(self, 'initialized'):
             base_log_dir = Path(log_dir).resolve()
-            base_log_dir.mkdir(parents=True, exist_ok=True)
-
-            # Determine a new versioned subdirectory under the base directory.
-            # If base_log_dir/v0 does not exist, use it. Otherwise, try v1, v2, etc.
-            version = 0
-            while True:
-                versioned_dir = base_log_dir / f'v{version}'
-                if not versioned_dir.exists():
-                    versioned_dir.mkdir(parents=True, exist_ok=True)
-                    self.log_dir = versioned_dir
-                    break
-                version += 1
+            log_dir_ver = base_log_dir / f'{round(time.time())}'
+            log_dir_ver.mkdir(parents=True, exist_ok=True)
+            self.log_dir = log_dir_ver
 
             self.initialized = True
 

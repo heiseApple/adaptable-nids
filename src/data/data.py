@@ -22,7 +22,7 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     Returns:
         tuple: A tuple (x, y) where x is the input features and y are the labels.
     """
-    
+    dataset_dict = dict()
     dc = dataset_config[dataset]
     full_path = dc['path']
     label_column = dc.get('label_column', 'LABEL')
@@ -51,11 +51,12 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     data = np.concatenate(data_series.tolist(), axis=0).astype(np.float32) 
     data = np.expand_dims(data, axis=1)
     
-    labels = np.array([label for label in df['ENC_LABEL']], dtype=np.int64)
-    
+    dataset_dict['labels'] = np.array([label for label in df['ENC_LABEL']], dtype=np.int64)
     if is_flat:
-        return np.array([np.ravel(a) for a in data]), labels
-    return data, labels
+        dataset_dict['data'] = np.array([np.ravel(a.T) for a in data])
+        return dataset_dict
+    dataset_dict['data'] = data
+    return dataset_dict
 
 
 def _preprocess_dataframe(df, label_column, path, config):
