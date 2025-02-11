@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from data.data import get_data_labels
 from data.splitter import DatasetSplitter
 from util.config import load_config
+from util.results_evaluator import ResultsEvaluator
 from util.directory_manager import DirectoryManager
 from approach import (
     MLModule,
@@ -40,7 +41,7 @@ def main():
     with open(f'{dm.log_dir}/dict_args.json', 'w') as f:
         json.dump(dict_args, f)
     
-    ### 1 - GET DATASET AND LOADERS
+    ### 1 - GET DATASET
     dataset = get_data_labels(
         dataset=args.dataset,
         num_pkts=args.num_pkts,
@@ -57,8 +58,12 @@ def main():
         **dict_args
     )
     ml_approach.fit(dataset_splits['train'])
+    ml_approach.validate(dataset_splits['val'])
     ml_approach.predict(dataset_splits['test'])
     
+    re = ResultsEvaluator(dataset_name=args.dataset)
+    for folder in ['test', 'val']:
+        re.process_folder(folder)
     
 if __name__ == '__main__':
     main()

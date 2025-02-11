@@ -7,6 +7,13 @@ from util.config import load_config
 
 
 class XGB(MLModule):
+    """
+    Wrapper of XGBClassifier from xgboost.
+    Attributes:
+        n_estimators (int): Number of boosting rounds.
+        max_depth (int): Maximum tree depth for base learners.
+        eval_metric (str): Evaluation metric for validation data.
+    """
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,8 +43,14 @@ class XGB(MLModule):
         self.model.fit(data, labels)
 
     def _predict(self, data, labels):
-        prob = self.model.predict_proba(data)
-        pred = np.argmax(prob, axis=1)
+        probs = self.model.predict_proba(data)
+        preds = np.argmax(probs, axis=1)
         
-        summary = classification_report(labels, pred, digits=4, output_dict=True, zero_division=0)
-        print(summary)
+        summary = classification_report(labels, preds, digits=4, output_dict=True, zero_division=0)
+        
+        return {
+            'accuracy': summary['accuracy'],
+            'f1_score_macro_avg': summary['macro avg']['f1-score'],
+            'labels': labels,
+            'preds': preds,
+        }
