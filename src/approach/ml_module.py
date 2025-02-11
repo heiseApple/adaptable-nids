@@ -8,8 +8,10 @@ from util.directory_manager import DirectoryManager
 
 ml_approaches = {
     'random_forest' : 'RandomForest',
-    'xgb' : 'XGB'
+    'xgb' : 'XGB',
+    'knn' : 'KNN',
 }
+
 
 class MLModule():
     
@@ -21,7 +23,6 @@ class MLModule():
         
     @staticmethod
     def get_approach(ml_name, **kwargs):
-        # Dynamically import and return the specified ML approach class
         Approach = getattr(importlib.import_module(
             name=f'approach.{ml_name}'), ml_approaches[ml_name])
         return Approach(**kwargs)

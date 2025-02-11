@@ -1,0 +1,61 @@
+import numpy as np
+from sklearn.neighbors  import KNeighborsClassifier
+from sklearn.metrics import classification_report
+
+from approach.ml_module import MLModule
+from util.config import load_config
+
+
+class KNN(MLModule):
+    """
+    Wrapper of KNeighborsClassifier from sklearn.
+    Attributes:
+        n_neighbors (int): The number of neighbors to use. Default is loaded from configuration.
+        weights (str): The weight function used in prediction. Default is loaded from configuration.
+        p (int): The power parameter for the Minkowski metric. Default is loaded from configuration.
+        metric (str): The distance metric to use. Default is loaded from configuration.
+        
+    """
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        cf = load_config()
+
+        self.n_neighbors = kwargs.get('n_neighbors', cf['knn_n_neighbors'])
+        self.weights = kwargs.get('weights', cf['knn_weights'])
+        self.p = kwargs.get('p', cf['knn_p'])
+        self.metric = kwargs.get('metric', cf['knn_metric'])
+        
+        self.model = KNeighborsClassifier(
+            n_neighbors=self.n_neighbors,
+            weights=self.weights,
+            p=self.p,
+            metric=self.metric
+        )
+        
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        cf = load_config()
+        parser = MLModule.add_model_specific_args(parent_parser)
+        parser.add_argument('--n-neighbors', type=int, default=cf['knn_n_neighbors'])
+        parser.add_argument('--weights', type=str, default=cf['knn_weights'])
+        parser.add_argument('--p', type=int, default=cf['knn_p'])
+        parser.add_argument('--metric', type=str, default=cf['knn_metric'])
+        return parser
+    
+    def _fit(self, data, labels):
+        self.model.fit(data, labels)
+
+    def _predict(self, data, labels):
+        probs = self.model.predict_proba(data)
+        preds = np.argmax(probs, axis=1)
+        
+        summary = classification_report(labels, preds, digits=4, output_dict=True, zero_division=0)
+        
+        return {
+            'accuracy': summary['accuracy'],
+            'f1_score_macro_avg': summary['macro avg']['f1-score'],
+            'labels': labels,
+            'preds': preds,
+        }
+        

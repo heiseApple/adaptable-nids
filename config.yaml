@@ -19,13 +19,24 @@ seed: 0
 log_dir: "../results"
 ml_appr: "random_forest"
 
+# DL TRAINING
+lr: 0.0001
+lr_strat: 'none'
+max_epochs: 100
+min_epochs: 1
+
 # RANDOM FOREST
-rf_n_jobs: -1
-rf_verbose: 0
+rf_criterion: 'gini'
 rf_n_estimators: 100
-rf_max_depth: 3
+rf_max_depth:
 
 # XGB
 xgb_n_estimators: 100
 xgb_max_depth: 3
 xgb_eval_metric: 'mlogloss'
+
+# KNN
+knn_n_neighbors: 5
+knn_weights: 'uniform'
+knn_p: 2
+knn_metric: 'minkowski'

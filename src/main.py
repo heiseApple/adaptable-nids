@@ -9,7 +9,8 @@ from util.directory_manager import DirectoryManager
 from approach import (
     MLModule,
     RandomForest,
-    XGB
+    XGB,
+    KNN,
 )
 
 
@@ -21,6 +22,7 @@ def main():
     parser = ArgumentParser(conflict_handler='resolve', add_help=True) 
     parser = RandomForest.add_model_specific_args(parser)
     parser = XGB.add_model_specific_args(parser)
+    parser = KNN.add_model_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
     parser.add_argument('--ml-appr', type=str, default=cf['ml_appr'], help='ML approach to use')
@@ -53,13 +55,13 @@ def main():
     dataset_splits = ds.train_val_test_split()
     
     ### 2 - TRAIN AND TEST
-    ml_approach = MLModule.get_approach(
+    approach = MLModule.get_approach(
         ml_name=args.ml_appr, 
         **dict_args
     )
-    ml_approach.fit(dataset_splits['train'])
-    ml_approach.validate(dataset_splits['val'])
-    ml_approach.predict(dataset_splits['test'])
+    approach.fit(dataset_splits['train'])
+    approach.validate(dataset_splits['val'])
+    approach.predict(dataset_splits['test'])
     
     re = ResultsEvaluator(dataset_name=args.dataset)
     for folder in ['test', 'val']:

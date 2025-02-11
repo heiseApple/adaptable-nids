@@ -20,15 +20,13 @@ class RandomForest(MLModule):
         super().__init__(**kwargs)
         cf = load_config()
 
-        self.n_jobs = kwargs.get('n_jobs', cf['rf_n_jobs'])
-        self.verbose = kwargs.get('verbose', cf['rf_verbose'])
+        self.criterion = kwargs.get('criterion', cf['rf_criterion'])
         self.n_estimators = kwargs.get('n_estimators', cf['rf_n_estimators'])
         self.max_depth = kwargs.get('max_depth', cf['rf_max_depth'])
-        
+
         self.model = RandomForestClassifier(
             random_state=self.seed,
-            n_jobs=self.n_jobs, 
-            verbose=self.verbose, 
+            criterion=self.criterion,
             n_estimators=self.n_estimators, 
             max_depth=self.max_depth
         )
@@ -37,10 +35,9 @@ class RandomForest(MLModule):
     def add_model_specific_args(parent_parser):
         cf = load_config()
         parser = MLModule.add_model_specific_args(parent_parser)
-        parser.add_argument('--n-jobs', type=int, default=cf['rf_n_jobs'])
-        parser.add_argument('--verbose', type=int, default=cf['rf_verbose'])
-        parser.add_argument('--n-estimators', type=int, default=cf['rf_n_estimators'])
-        parser.add_argument('--max-depth', type=int, default=cf['rf_max_depth'])
+        parser.add_argument('--criterion', type=str, default=cf['rf_criterion'])
+        parser.add_argument('--rf-n-estimators', type=int, default=cf['rf_n_estimators'])
+        parser.add_argument('--rf-max-depth', type=int, default=cf['rf_max_depth'])
         return parser
     
     def _fit(self, data, labels):

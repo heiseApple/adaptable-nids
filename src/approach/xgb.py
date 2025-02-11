@@ -19,8 +19,8 @@ class XGB(MLModule):
         super().__init__(**kwargs)
         cf = load_config()
 
-        self.n_estimators = kwargs.get('n_estimators', cf['xgb_n_estimators'])
-        self.max_depth = kwargs.get('max_depth', cf['xgb_max_depth'])
+        self.n_estimators = kwargs.get('xgb_n_estimators', cf['xgb_n_estimators'])
+        self.max_depth = kwargs.get('xgb_max_depth', cf['xgb_max_depth'])
         self.eval_metric = kwargs.get('eval_metric', cf['xgb_eval_metric'])
         
         self.model = XGBClassifier(
@@ -34,8 +34,8 @@ class XGB(MLModule):
     def add_model_specific_args(parent_parser):
         cf = load_config()
         parser = MLModule.add_model_specific_args(parent_parser)
-        parser.add_argument('--n-estimators', type=int, default=cf['xgb_n_estimators'])
-        parser.add_argument('--max-depth', type=int, default=cf['xgb_max_depth'])
+        parser.add_argument('--xgb-n-estimators', type=int, default=cf['xgb_n_estimators'])
+        parser.add_argument('--xgb-max-depth', type=int, default=cf['xgb_max_depth'])
         parser.add_argument('--eval-metric', type=str, default=cf['xgb_eval_metric'])
         return parser
     
