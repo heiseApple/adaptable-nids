@@ -1,10 +1,7 @@
-import json
 import importlib
-import numpy as np
 from argparse import ArgumentParser
 
 from util.config import load_config
-from util.directory_manager import DirectoryManager
 
 ml_approaches = {
     'random_forest' : 'RandomForest',
@@ -13,18 +10,21 @@ ml_approaches = {
 }
 
 
-class MLModule():
+class MLModule:
     
-    def __init__(self, **kwargs):
+    def __init__(self, datamodule, callbacks=None, **kwargs):
         cf = load_config()
 
+        self.datamodule = datamodule
         self.seed = kwargs.get('seed', cf['seed'])
         self.phase = None
         
+        self.callbacks = callbacks if callbacks is not None else []
+        
     @staticmethod
-    def get_approach(ml_name, **kwargs):
+    def get_approach(appr_name, **kwargs):
         Approach = getattr(importlib.import_module(
-            name=f'approach.{ml_name}'), ml_approaches[ml_name])
+            name=f'approach.{appr_name}'), ml_approaches[appr_name])
         return Approach(**kwargs)
     
     @staticmethod
@@ -36,36 +36,38 @@ class MLModule():
         )
         return parser
     
-    def fit(self, train_dataset):
-        # Set phase to 'train' and fit the model
+    def fit(self):
         self.phase = 'train'
-        data, labels = train_dataset
+        
+        for cb in self.callbacks: 
+            cb.on_fit_start(self)
+            
+        data, labels = self.datamodule.get_train_data()
         self._fit(data, labels)
         
-    def predict(self, test_dataset):
-        # Set phase to 'test' and test the model
+        for cb in self.callbacks:
+            cb.on_fit_end(self)
+        
+    def test(self):
         self.phase = 'test'
-        data, labels = test_dataset
-        self.outputs = self._predict(data, labels)
-        self.on_predict_end()
         
-    def validate(self, val_dataset):
-        # Set phase to 'val' and validate the model
+        for cb in self.callbacks:
+            cb.on_test_start(self)
+            
+        data, labels = self.datamodule.get_test_data()
+        self.outputs = self._predict(data, labels)
+        
+        for cb in self.callbacks:
+            cb.on_test_end(self)
+        
+    def validation(self):
         self.phase = 'val'
-        data, labels = val_dataset
+        
+        for cb in self.callbacks:
+            cb.on_validation_start(self)
+            
+        data, labels = self.datamodule.get_val_data()
         self.outputs = self._predict(data, labels)
-        self.on_predict_end()
         
-    def on_predict_end(self):
-        # Save prediction results and metrics
-        dm = DirectoryManager()
-        path = dm.mkdir(f'{self.phase}')
-        np.savez_compressed(f'{path}/labels.npz', labels=self.outputs['labels'])
-        np.savez_compressed(f'{path}/preds.npz', preds=self.outputs['preds'])
-        
-        res = {
-            'accuracy': self.outputs['accuracy'],
-            'f1_score_macro_avg': self.outputs['f1_score_macro_avg'],
-        }
-        with open(f'{dm.log_dir}/{self.phase}_results.json', 'w') as f:
-            json.dump(res, f)
+        for cb in self.callbacks:
+            cb.on_validation_end(self)

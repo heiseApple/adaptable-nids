@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.model_selection import train_test_split
 
 from util.config import load_config
@@ -25,5 +26,5 @@ class DatasetSplitter():
         return {
             'train': (x_train, y_train),
             'val': (x_val, y_val),
-            'test': (x_test, y_test)
-        }
+            'test': (x_test, y_test),
+        }, len(np.unique(y))

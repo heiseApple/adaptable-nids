@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.neighbors  import KNeighborsClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, f1_score
 
 from approach.ml_module import MLModule
 from util.config import load_config
@@ -30,7 +30,7 @@ class KNN(MLModule):
             n_neighbors=self.n_neighbors,
             weights=self.weights,
             p=self.p,
-            metric=self.metric
+            metric=self.metric,
         )
         
     @staticmethod
@@ -50,11 +50,12 @@ class KNN(MLModule):
         probs = self.model.predict_proba(data)
         preds = np.argmax(probs, axis=1)
         
-        summary = classification_report(labels, preds, digits=4, output_dict=True, zero_division=0)
+        accuracy = accuracy_score(labels, preds)
+        f1_macro = f1_score(labels, preds, average='macro', zero_division=0)
         
         return {
-            'accuracy': summary['accuracy'],
-            'f1_score_macro_avg': summary['macro avg']['f1-score'],
+            'accuracy': accuracy,
+            'f1_score_macro': f1_macro,
             'labels': labels,
             'preds': preds,
         }

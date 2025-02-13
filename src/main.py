@@ -2,15 +2,18 @@ import json
 from argparse import ArgumentParser
  
 from data.data import get_data_labels
+from data.datamodule import DataModule
 from data.splitter import DatasetSplitter
 from util.config import load_config
 from util.results_evaluator import ResultsEvaluator
 from util.directory_manager import DirectoryManager
 from approach import (
-    MLModule,
     RandomForest,
     XGB,
     KNN,
+    Scratch,
+    get_approach,
+    get_approach_type
 )
 
 
@@ -23,9 +26,11 @@ def main():
     parser = RandomForest.add_model_specific_args(parser)
     parser = XGB.add_model_specific_args(parser)
     parser = KNN.add_model_specific_args(parser)
+    parser = Scratch.add_model_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
-    parser.add_argument('--ml-appr', type=str, default=cf['ml_appr'], help='ML approach to use')
+    parser.add_argument('--approach', type=str, default=cf['approach'], help='ML or DL approach to use')
+    parser.add_argument('--network', type=str, default=cf['network'], help='Network to use')
     # Data args
     parser.add_argument('--dataset', type=str, default=cf['dataset'], help='Dataset to use')
     parser.add_argument('--is-flat', action='store_true', default=cf['is_flat'],
@@ -39,9 +44,6 @@ def main():
     
     args = parser.parse_args()
     dict_args = vars(args)
-    dm = DirectoryManager(args.log_dir)
-    with open(f'{dm.log_dir}/dict_args.json', 'w') as f:
-        json.dump(dict_args, f)
     
     ### 1 - GET DATASET
     dataset = get_data_labels(
@@ -52,16 +54,24 @@ def main():
         seed=args.seed,
     )
     ds = DatasetSplitter(seed=args.seed, dataset=dataset)
-    dataset_splits = ds.train_val_test_split()
+    dataset_splits, dict_args['num_classes'] = ds.train_val_test_split()
+    datamodule = DataModule(
+        train_dataset=dataset_splits['train'],
+        val_dataset=dataset_splits['val'],
+        test_dataset=dataset_splits['test'],
+        appr_type=get_approach_type(args.approach),
+    )
+    
+    dm = DirectoryManager(args.log_dir)
+    with open(f'{dm.log_dir}/dict_args.json', 'w') as f:
+        json.dump(dict_args, f)
     
     ### 2 - TRAIN AND TEST
-    approach = MLModule.get_approach(
-        ml_name=args.ml_appr, 
-        **dict_args
-    )
-    approach.fit(dataset_splits['train'])
-    approach.validate(dataset_splits['val'])
-    approach.predict(dataset_splits['test'])
+    approach = get_approach(approach_name=args.approach, datamodule=datamodule, **dict_args)
+        
+    approach.fit()
+    approach.validation()
+    approach.test()
     
     re = ResultsEvaluator(dataset_name=args.dataset)
     for folder in ['test', 'val']:

@@ -1,6 +1,6 @@
 import numpy as np
 from xgboost import XGBClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, f1_score
 
 from approach.ml_module import MLModule
 from util.config import load_config
@@ -27,7 +27,7 @@ class XGB(MLModule):
             use_label_encoder=True,
             n_estimators=self.n_estimators, 
             max_depth=self.max_depth,
-            eval_metric=self.eval_metric
+            eval_metric=self.eval_metric,
         )
         
     @staticmethod
@@ -46,11 +46,12 @@ class XGB(MLModule):
         probs = self.model.predict_proba(data)
         preds = np.argmax(probs, axis=1)
         
-        summary = classification_report(labels, preds, digits=4, output_dict=True, zero_division=0)
+        accuracy = accuracy_score(labels, preds)
+        f1_macro = f1_score(labels, preds, average='macro', zero_division=0)
         
         return {
-            'accuracy': summary['accuracy'],
-            'f1_score_macro_avg': summary['macro avg']['f1-score'],
+            'accuracy': accuracy,
+            'f1_score_macro': f1_macro,
             'labels': labels,
             'preds': preds,
         }
