@@ -16,8 +16,8 @@ class Scratch(DLModule):
         self.criterion = nn.CrossEntropyLoss()
         
     @staticmethod
-    def add_model_specific_args(parent_parser):
-        parser = DLModule.add_model_specific_args(parent_parser)
+    def add_appr_specific_args(parent_parser):
+        parser = DLModule.add_appr_specific_args(parent_parser)
         return parser
     
     
@@ -64,8 +64,15 @@ class Scratch(DLModule):
             epoch_acc = accuracy.compute().item()
             epoch_f1  = f1_score.compute().item()
             
-            val_score = self._predict(val_dataloader, on_train_epoch_end=True)[self.sch_monitor]
-            self.run_scheduler_step(monitor_value=val_score, epoch=epoch+1)
+            self.outputs = self._predict(val_dataloader, on_train_epoch_end=True)
+            
+            for cb in self.callbacks:
+                cb.on_epoch_end(self, epoch)
+            
+            if self.should_stop:
+                break # Early stopping condition
+            
+            self.run_scheduler_step(monitor_value=self.outputs[self.sch_monitor], epoch=epoch+1)
             
             
     def _predict(self, dataloader, on_train_epoch_end=False):

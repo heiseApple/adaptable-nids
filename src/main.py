@@ -23,10 +23,10 @@ def main():
     
     # Experiment args
     parser = ArgumentParser(conflict_handler='resolve', add_help=True) 
-    parser = RandomForest.add_model_specific_args(parser)
-    parser = XGB.add_model_specific_args(parser)
-    parser = KNN.add_model_specific_args(parser)
-    parser = Scratch.add_model_specific_args(parser)
+    parser = RandomForest.add_appr_specific_args(parser)
+    parser = XGB.add_appr_specific_args(parser)
+    parser = KNN.add_appr_specific_args(parser)
+    parser = Scratch.add_appr_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
     parser.add_argument('--approach', type=str, default=cf['approach'], help='ML or DL approach to use')

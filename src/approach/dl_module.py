@@ -41,7 +41,7 @@ class DLModule:
     
     
     @staticmethod
-    def add_model_specific_args(parent_parser):
+    def add_appr_specific_args(parent_parser):
         cf = load_config()
         parser = ArgumentParser(
             parents=[parent_parser],

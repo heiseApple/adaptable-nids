@@ -34,6 +34,12 @@ cawr_t0: 10
 cawr_t_mult: 1
 cawr_eta_min: 1e-5
 
+# EARLY STOPPING
+es_monitor: 'loss'
+es_mode: 'min'
+es_patience: 10
+es_min_delta: 0
+
 # DATALOADER
 batch_size: 64
 num_workers: 0

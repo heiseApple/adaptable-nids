@@ -27,3 +27,11 @@ class Callback:
     def on_test_end(self, module):
         # Called at the end of the test.
         pass
+    
+    def on_epoch_start(self, module, epoch):
+        # Called at the beginning of a fit epoch
+        pass
+
+    def on_epoch_end(self, module, epoch):
+        # Called at the end of a fit epoch
+        pass

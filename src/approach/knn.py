@@ -34,9 +34,9 @@ class KNN(MLModule):
         )
         
     @staticmethod
-    def add_model_specific_args(parent_parser):
+    def add_appr_specific_args(parent_parser):
         cf = load_config()
-        parser = MLModule.add_model_specific_args(parent_parser)
+        parser = MLModule.add_appr_specific_args(parent_parser)
         parser.add_argument('--n-neighbors', type=int, default=cf['knn_n_neighbors'])
         parser.add_argument('--weights', type=str, default=cf['knn_weights'])
         parser.add_argument('--p', type=int, default=cf['knn_p'])

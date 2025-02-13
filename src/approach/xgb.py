@@ -31,9 +31,9 @@ class XGB(MLModule):
         )
         
     @staticmethod
-    def add_model_specific_args(parent_parser):
+    def add_appr_specific_args(parent_parser):
         cf = load_config()
-        parser = MLModule.add_model_specific_args(parent_parser)
+        parser = MLModule.add_appr_specific_args(parent_parser)
         parser.add_argument('--xgb-n-estimators', type=int, default=cf['xgb_n_estimators'])
         parser.add_argument('--xgb-max-depth', type=int, default=cf['xgb_max_depth'])
         parser.add_argument('--eval-metric', type=str, default=cf['xgb_eval_metric'])

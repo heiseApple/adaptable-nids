@@ -33,9 +33,9 @@ class RandomForest(MLModule):
         )
         
     @staticmethod
-    def add_model_specific_args(parent_parser):
+    def add_appr_specific_args(parent_parser):
         cf = load_config()
-        parser = MLModule.add_model_specific_args(parent_parser)
+        parser = MLModule.add_appr_specific_args(parent_parser)
         parser.add_argument('--criterion', type=str, default=cf['rf_criterion'])
         parser.add_argument('--rf-n-estimators', type=int, default=cf['rf_n_estimators'])
         parser.add_argument('--rf-max-depth', type=int, default=cf['rf_max_depth'])

@@ -37,6 +37,8 @@ class ResultsEvaluator:
         self.detailed_dir = dm.mkdir('detailed')
         self.log_dir = dm.log_dir
         self.dataset_name = dataset_name
+        
+        print('='*100)
 
 
     def load_data(self, folder_path):
