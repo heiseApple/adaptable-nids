@@ -7,6 +7,7 @@ from data.splitter import DatasetSplitter
 from util.config import load_config
 from util.results_evaluator import ResultsEvaluator
 from util.directory_manager import DirectoryManager
+from util.seed import seed_everything
 from approach import (
     RandomForest,
     XGB,
@@ -28,6 +29,7 @@ def main():
     parser = KNN.add_appr_specific_args(parser)
     parser = Scratch.add_appr_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
+    parser.add_argument('--gpu', action='store_true', default=cf['gpu'], help='Use GPU if available')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
     parser.add_argument('--approach', type=str, default=cf['approach'], help='ML or DL approach to use')
     parser.add_argument('--network', type=str, default=cf['network'], help='Network to use')
@@ -44,6 +46,8 @@ def main():
     
     args = parser.parse_args()
     dict_args = vars(args)
+    
+    seed_everything(args.seed)
     
     ### 1 - GET DATASET
     dataset = get_data_labels(

@@ -1,8 +1,11 @@
 from approach.ml_module import MLModule, ml_approaches
 from approach.dl_module import DLModule, dl_approaches
 from util.config import load_config
-from callback.early_stopping_callback import EarlyStoppingCallback
-from callback.save_outputs_callback import SaveOutputsCallback
+from callback import (
+    EarlyStopping,
+    SaveOutputs,
+    ModelCheckpoint
+)
 
 
 def get_approach_type(approach_name):
@@ -15,7 +18,7 @@ def get_approach_type(approach_name):
     
 
 def get_approach(approach_name, datamodule, **kwargs):
-    callbacks = [SaveOutputsCallback()]
+    callbacks = [SaveOutputs()]
     cf = load_config()
     
     if approach_name in ml_approaches:
@@ -27,11 +30,15 @@ def get_approach(approach_name, datamodule, **kwargs):
         )
     elif approach_name in dl_approaches:
         callbacks.extend([
-            EarlyStoppingCallback(
+            EarlyStopping(
                 monitor=cf['es_monitor'],
                 mode=cf['es_mode'],
                 patience=cf['es_patience'],
                 min_delta=cf['es_min_delta']
+            ),
+            ModelCheckpoint(
+                monitor=cf['mc_monitor'],
+                mode=cf['mc_mode']
             )
         ])
         return DLModule.get_approach(

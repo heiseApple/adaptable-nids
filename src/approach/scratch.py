@@ -23,63 +23,70 @@ class Scratch(DLModule):
     
     def _fit(self, train_dataloader, val_dataloader):
         
-        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass')
-        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass')
-        
-        val_score = None
-        
-        # Training loop
+        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
+        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
+
         for epoch in range(self.max_epochs):
             self.net.train()
-            
-            accuracy.reset()
-            f1_score.reset()
-            
-            running_loss = 0.0
-            
-            desc = f'Ep[{epoch+1}/{self.max_epochs}]'
-            if val_score is not None:
-                desc = (f'{desc}||trn loss:{epoch_loss:.4f}||trn acc:{epoch_acc:.4f}'
-                        f'||trn f1:{epoch_f1:.4f}||val {self.sch_monitor}:{val_score:.4f}')
-            train_loop = tqdm(train_dataloader, desc=desc, leave=False)
 
-            for batch_x, batch_y in train_loop:                 
-                # Forward pass
+            for cb in self.callbacks:
+                cb.on_epoch_start(self, epoch)
+
+            running_loss = 0.0
+            all_labels, all_preds = [], []
+
+            postfix = {
+                'trn loss': f'{epoch_loss:.4f}', 'trn acc': f'{epoch_acc:.4f}',
+                'trn f1': f'{epoch_f1:.4f}', f'val {self.sch_monitor}': f'{val_score:.4f}'
+            } if epoch>0 else {}
+            train_loop = tqdm(
+                train_dataloader, desc=f'Ep[{epoch+1}/{self.max_epochs}]',  
+                postfix=postfix, leave=False
+            )
+            
+            
+            for batch_x, batch_y in train_loop:
+                # Move data on self.device
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+            
+                # Forward pass e Loss
                 logits = self.net(batch_x)
                 loss = self.criterion(logits, batch_y.long())
-                
+
                 # Backward pass
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                
                 running_loss += loss.item()
-                
+
                 # Metrics
                 preds = torch.argmax(logits, dim=1)
-                accuracy.update(preds, batch_y)
-                f1_score.update(preds, batch_y)
-                          
+                all_labels.append(batch_y)
+                all_preds.append(preds)
+                
             epoch_loss = running_loss / len(train_dataloader)
-            epoch_acc = accuracy.compute().item()
-            epoch_f1  = f1_score.compute().item()
-            
-            self.outputs = self._predict(val_dataloader, on_train_epoch_end=True)
-            
+
+            epoch_acc = accuracy(torch.cat(all_preds), torch.cat(all_labels)).item()
+            epoch_f1 = f1_score(torch.cat(all_preds), torch.cat(all_labels)).item()
+
+            # Validation on fit epoch end
+            self.epoch_outputs = self._predict(val_dataloader, on_train_epoch_end=True)
+            val_score = self.epoch_outputs[self.sch_monitor]
+
             for cb in self.callbacks:
                 cb.on_epoch_end(self, epoch)
-            
+
             if self.should_stop:
-                break # Early stopping condition
-            
-            self.run_scheduler_step(monitor_value=self.outputs[self.sch_monitor], epoch=epoch+1)
-            
+                break  # Early stopping
+
+            self.run_scheduler_step(monitor_value=val_score, epoch=epoch + 1)
+                
             
     def _predict(self, dataloader, on_train_epoch_end=False):
         self.net.eval()
         
-        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass')
-        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass')
+        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
+        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
         
         all_labels, all_preds, all_logits = [], [], []
         running_loss = 0.0
@@ -88,16 +95,15 @@ class Scratch(DLModule):
         with torch.no_grad():
             
             for batch_x, batch_y in tqdm(dataloader, desc=desc, leave=not self.phase=='train'):
+                # Move data on self.device
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                
                 logits = self.net(batch_x)
                 preds = torch.argmax(logits, dim=1)
                 
                 loss = self.criterion(logits, batch_y.long())
                 running_loss += loss.item() * batch_y.shape[0]
                 
-                # Metrics
-                accuracy.update(preds, batch_y)
-                f1_score.update(preds, batch_y)
-                                
                 all_labels.append(batch_y)
                 all_preds.append(preds)
                 all_logits.append(logits)
@@ -109,8 +115,8 @@ class Scratch(DLModule):
         eval_loss = running_loss / labels.shape[0] if labels.shape[0] > 0 else 0.0
         
         return {
-            'accuracy' : accuracy.compute().item(),
-            'f1_score_macro' : f1_score.compute().item(),
+            'accuracy' : accuracy(torch.cat(all_preds), torch.cat(all_labels)).item(),
+            'f1_score_macro' : f1_score(torch.cat(all_preds), torch.cat(all_labels)).item(),
             'loss' : eval_loss,
             'labels': labels.detach().cpu().numpy(),
             'preds': preds.detach().cpu().numpy(),

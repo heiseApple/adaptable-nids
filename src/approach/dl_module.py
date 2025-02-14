@@ -1,3 +1,4 @@
+import torch
 import importlib
 from argparse import ArgumentParser
 from torch import optim
@@ -15,7 +16,11 @@ class DLModule:
     def __init__(self, datamodule, callbacks=None, **kwargs):
         cf = load_config()
         
-        self.net = build_network(**kwargs)
+        gpu = kwargs.get('gpu', cf['gpu'])
+        self.device = torch.device('cuda') if gpu and torch.cuda.is_available() else torch.device('cpu')
+        print(f'Using device: {self.device}')
+        
+        self.net = build_network(**kwargs).to(self.device)
         print(self.net)
         
         self.datamodule = datamodule
@@ -24,9 +29,12 @@ class DLModule:
         self.lr = kwargs.get('lr', cf['lr'])
         self.lr_strat = kwargs.get('lr_strat', cf['lr_strat'])
         self.sch_monitor = kwargs.get('sch_monitor', cf['sch_monitor'])
+        
         self.max_epochs = kwargs.get('max_epochs', cf['max_epochs'])
         self.min_epochs = kwargs.get('min_epochs', cf['min_epochs'])
+        
         self.phase = None
+        self.outputs = None
         
         self.callbacks = callbacks if callbacks is not None else []
         
@@ -129,7 +137,7 @@ class DLModule:
             raise ValueError('Scheduler not implemented')
             
     
-    def run_scheduler_step(self, monitor_value=None, epoch=None):
+    def run_scheduler_step(self, monitor_value, epoch=None):
         if self.scheduler is None:
             return
         if self.lr_strat == 'lrop':

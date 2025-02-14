@@ -1,7 +1,6 @@
 class Callback:
     """
     Base class for Callbacks.
-    You can add any methods you want to trigger at specific events.
     """
     
     def on_fit_start(self, module):

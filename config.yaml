@@ -16,6 +16,8 @@ train_val_split: 0.9
 
 # EXPERIMENT
 seed: 0
+gpu: False
+deterministic: True
 log_dir: "../results"
 approach:
 
@@ -39,6 +41,10 @@ es_monitor: 'loss'
 es_mode: 'min'
 es_patience: 10
 es_min_delta: 0
+
+# MODEL CHECKPOINT
+mc_monitor: 'loss'
+mc_mode: 'min'
 
 # DATALOADER
 batch_size: 64

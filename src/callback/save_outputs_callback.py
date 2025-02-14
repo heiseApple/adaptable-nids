@@ -5,7 +5,7 @@ from util.directory_manager import DirectoryManager
 from callback.callback_lib import Callback
  
 
-class SaveOutputsCallback(Callback):
+class SaveOutputs(Callback):
     """
     Save prediction results and metrics 
     """

@@ -54,15 +54,21 @@ class BaseNetwork(nn.Module, ABC):
         """
         Saves the model weights to a specified file path.
         """
+        # for name, param in self.named_parameters():
+        #     print(name, param.device, torch.sum(param).item())
         dm = DirectoryManager()
         path = dm.mkdir('network_weights')
-        torch.save(self.state_dict(), f'{path}/{filename}.pt')
+        weights_path = f'{path}/{filename}.pt'
+        torch.save(self.state_dict(), weights_path)
+        return weights_path
 
     def load_weights(self, path):
         """
         Loads the model weights from a specified file path.
         """
         self.load_state_dict(torch.load(path))
+        # for name, param in self.named_parameters():
+        #     print(name, param.device, torch.sum(param).item())
         
     def trainability_info(self):
         print('\nTRAINABILITY INFO')
