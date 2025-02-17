@@ -14,6 +14,16 @@ def _get_logger(name, log_file, formatter, level=logging.INFO):
 
 
 class EarlyStopping(Callback):
+    """
+    EarlyStopping callback to stop training when a monitored metric has stopped improving.
+    Attributes:
+        monitor (str): The metric to be monitored.
+        mode (str): One of {'min', 'max'}. In 'min' mode, training will stop when the quantity monitored has stopped decreasing; 
+                    in 'max' mode it will stop when the quantity monitored has stopped increasing.
+        patience (int): Number of epochs with no improvement after which training will be stopped.
+        min_delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+        verbose (bool): If True, prints a message when training is stopped early.
+    """
     
     def __init__(self, monitor, mode, patience, min_delta, verbose=True):
         super().__init__()

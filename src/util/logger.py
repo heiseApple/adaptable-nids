@@ -1,6 +1,7 @@
 import os
 import json
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import (
@@ -16,7 +17,7 @@ from data.dataset_config import dataset_config
 from util.directory_manager import DirectoryManager
 
 
-class ResultsEvaluator:
+class Logger:
     """
     A class for evaluating prediction results by:
     - Loading label and prediction data from .npz files.
@@ -24,6 +25,7 @@ class ResultsEvaluator:
         recall, and F1-score (both macro and micro averages).
     - Saving detailed evaluation reports to text files.
     - Generating and saving confusion matrices (as CSV data and a normalized heatmap in PDF format).
+    - Plotting epoch metrics stored in a Parquet file as a line plot.
     Attributes:
         subfolders (tuple): A tuple of subfolder names (e.g., ('test', 'val')) indicating which
                             folders to process.
@@ -113,3 +115,38 @@ class ResultsEvaluator:
         metrics = self.compute_metrics(labels, preds)
         self.save_report(metrics, folder_name)
         self.generate_confusion_matrices(labels, preds, folder_name)
+        
+        
+    def _plot_metric_group(self, df, group_cols, ylabel, output_filename):
+
+        max_epoch = df.shape[0]
+        plt.figure(figsize=(max_epoch*0.20, 5))
+        for col in group_cols:
+            plt.plot(df['epoch'], df[col], marker='o', label=col)
+            
+        plt.xlabel('Epochs')
+        plt.ylabel(ylabel)
+        plt.grid(linestyle='--', color='gray')
+        plt.xticks(np.arange(1, max_epoch + 1, 1), fontsize=8, rotation=90)
+        plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
+        plt.savefig(f'{self.detailed_dir}/{output_filename}', bbox_inches='tight')
+        plt.close()        
+        
+        
+    def plot_metrics(self, filename='epoch_metrics'):
+        """
+        Reads a Parquet file containing epoch metrics and plots a line plot
+        of the metrics over epochs. The x-axis represents epochs.
+        """
+        dm = DirectoryManager()
+        df = pd.read_parquet(f'{dm.log_dir}/{filename}.parquet')
+        
+        metrics_columns = [col for col in df.columns if col != 'epoch']
+        loss_cols = [col for col in metrics_columns if 'loss' in col.lower()]
+        other_cols = [col for col in metrics_columns if col not in loss_cols]
+        
+        self._plot_metric_group(
+            df, loss_cols, ylabel='Loss Value', output_filename='epoch_loss.pdf')
+        self._plot_metric_group(
+            df, other_cols, ylabel='Metric Value', output_filename='epoch_metrics.pdf')
+        

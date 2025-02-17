@@ -4,7 +4,9 @@ from util.config import load_config
 from callback import (
     EarlyStopping,
     SaveOutputs,
-    ModelCheckpoint
+    ModelCheckpoint,
+    SaveTrainLog,
+    TimeMeasurement,
 )
 
 
@@ -18,7 +20,7 @@ def get_approach_type(approach_name):
     
 
 def get_approach(approach_name, datamodule, **kwargs):
-    callbacks = [SaveOutputs()]
+    callbacks = [SaveOutputs(), TimeMeasurement()]
     cf = load_config()
     
     if approach_name in ml_approaches:
@@ -39,7 +41,8 @@ def get_approach(approach_name, datamodule, **kwargs):
             ModelCheckpoint(
                 monitor=cf['mc_monitor'],
                 mode=cf['mc_mode']
-            )
+            ),
+            SaveTrainLog()
         ])
         return DLModule.get_approach(
             appr_name=approach_name,

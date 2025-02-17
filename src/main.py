@@ -5,7 +5,7 @@ from data.data import get_data_labels
 from data.datamodule import DataModule
 from data.splitter import DatasetSplitter
 from util.config import load_config
-from util.results_evaluator import ResultsEvaluator
+from util.logger import Logger
 from util.directory_manager import DirectoryManager
 from util.seed import seed_everything
 from approach import (
@@ -77,9 +77,10 @@ def main():
     approach.validation()
     approach.test()
     
-    re = ResultsEvaluator(dataset_name=args.dataset)
+    logger = Logger(dataset_name=args.dataset)
     for folder in ['test', 'val']:
-        re.process_folder(folder)
+        logger.process_folder(folder)
+    logger.plot_metrics()
     
 if __name__ == '__main__':
     main()

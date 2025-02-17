@@ -36,15 +36,15 @@ class Scratch(DLModule):
             all_labels, all_preds = [], []
 
             postfix = {
-                'trn loss': f'{epoch_loss:.4f}', 'trn acc': f'{epoch_acc:.4f}',
-                'trn f1': f'{epoch_f1:.4f}', f'val {self.sch_monitor}': f'{val_score:.4f}'
-            } if epoch>0 else {}
+                'trn loss': f'{self.epoch_outputs["train_loss"]:.4f}', 
+                'trn acc':  f'{self.epoch_outputs["train_accuracy"]:.4f}',
+                'trn f1':   f'{self.epoch_outputs["train_f1_score_macro"]:.4f}',
+                f'val {self.sch_monitor}': f'{val_score:.4f}'
+            } if epoch > 0 else {}
             train_loop = tqdm(
                 train_dataloader, desc=f'Ep[{epoch+1}/{self.max_epochs}]',  
                 postfix=postfix, leave=False
             )
-            
-            
             for batch_x, batch_y in train_loop:
                 # Move data on self.device
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
@@ -64,14 +64,15 @@ class Scratch(DLModule):
                 all_labels.append(batch_y)
                 all_preds.append(preds)
                 
-            epoch_loss = running_loss / len(train_dataloader)
-
-            epoch_acc = accuracy(torch.cat(all_preds), torch.cat(all_labels)).item()
-            epoch_f1 = f1_score(torch.cat(all_preds), torch.cat(all_labels)).item()
-
             # Validation on fit epoch end
             self.epoch_outputs = self._predict(val_dataloader, on_train_epoch_end=True)
             val_score = self.epoch_outputs[self.sch_monitor]
+            
+            self.epoch_outputs['train_loss'] = running_loss / len(train_dataloader)
+            self.epoch_outputs['train_accuracy'] = accuracy(
+                torch.cat(all_preds), torch.cat(all_labels)).item()
+            self.epoch_outputs['train_f1_score_macro'] = f1_score(
+                torch.cat(all_preds), torch.cat(all_labels)).item()
 
             for cb in self.callbacks:
                 cb.on_epoch_end(self, epoch)
@@ -108,15 +109,15 @@ class Scratch(DLModule):
                 all_preds.append(preds)
                 all_logits.append(logits)
                 
-        labels = torch.cat(all_labels, dim=0)
-        preds = torch.cat(all_preds, dim=0)
-        logits = torch.cat(all_logits, dim=0)
+        labels = torch.cat(all_labels)
+        preds = torch.cat(all_preds)
+        logits = torch.cat(all_logits)
         
         eval_loss = running_loss / labels.shape[0] if labels.shape[0] > 0 else 0.0
         
         return {
-            'accuracy' : accuracy(torch.cat(all_preds), torch.cat(all_labels)).item(),
-            'f1_score_macro' : f1_score(torch.cat(all_preds), torch.cat(all_labels)).item(),
+            'accuracy' : accuracy(preds, labels).item(),
+            'f1_score_macro' : f1_score(preds, labels).item(),
             'loss' : eval_loss,
             'labels': labels.detach().cpu().numpy(),
             'preds': preds.detach().cpu().numpy(),
