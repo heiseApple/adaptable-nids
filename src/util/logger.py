@@ -43,7 +43,7 @@ class Logger:
         print('='*100)
 
 
-    def load_data(self, folder_path):
+    def _load_data(self, folder_path):
         labels_data = np.load(f'{folder_path}/labels.npz')
         preds_data = np.load(f'{folder_path}/preds.npz')
         labels = labels_data[labels_data.files[0]]
@@ -51,7 +51,7 @@ class Logger:
         return labels, preds
 
 
-    def compute_metrics(self, labels, preds):
+    def _compute_metrics(self, labels, preds):
         metrics_dict = {}
         metrics_dict['accuracy'] = accuracy_score(labels, preds)
         metrics_dict['precision_macro'] = precision_score(labels, preds, average='macro', zero_division=0)
@@ -64,7 +64,7 @@ class Logger:
         return metrics_dict
     
     
-    def save_report(self, metrics, folder_name):
+    def _save_report(self, metrics, folder_name):
         with open(f'{self.detailed_dir}/report_{folder_name}.txt', 'w') as f:
             f.write('Metrics Report\n')
             f.write('=========================\n')
@@ -76,7 +76,7 @@ class Logger:
         print(f'Report saved => {self.detailed_dir}/report_{folder_name}.txt')
         
         
-    def generate_confusion_matrices(self, labels, preds, folder_name):
+    def _generate_confusion_matrices(self, labels, preds, folder_name):
         cm = confusion_matrix(labels, preds)
         np.savetxt(
             f'{self.detailed_dir}/confusion_matrix_{folder_name}.csv', cm, delimiter=',', fmt='%d'
@@ -111,10 +111,10 @@ class Logger:
         """
         if folder_name not in self.subfolders:
             return
-        labels, preds = self.load_data(f'{self.log_dir}/{folder_name}')
-        metrics = self.compute_metrics(labels, preds)
-        self.save_report(metrics, folder_name)
-        self.generate_confusion_matrices(labels, preds, folder_name)
+        labels, preds = self._load_data(f'{self.log_dir}/{folder_name}')
+        metrics = self._compute_metrics(labels, preds)
+        self._save_report(metrics, folder_name)
+        self._generate_confusion_matrices(labels, preds, folder_name)
         
         
     def _plot_metric_group(self, df, group_cols, ylabel, output_filename):
@@ -139,7 +139,10 @@ class Logger:
         of the metrics over epochs. The x-axis represents epochs.
         """
         dm = DirectoryManager()
-        df = pd.read_parquet(f'{dm.log_dir}/{filename}.parquet')
+        file_path = f'{dm.log_dir}/{filename}.parquet'
+        if not os.path.exists(file_path):
+            return
+        df = pd.read_parquet(file_path)
         
         metrics_columns = [col for col in df.columns if col != 'epoch']
         loss_cols = [col for col in metrics_columns if 'loss' in col.lower()]

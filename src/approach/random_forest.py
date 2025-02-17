@@ -24,7 +24,7 @@ class RandomForest(MLModule):
         self.n_estimators = kwargs.get('n_estimators', cf['rf_n_estimators'])
         self.max_depth = kwargs.get('max_depth', cf['rf_max_depth'])
 
-        self.model = RandomForestClassifier(
+        self.classifier = RandomForestClassifier(
             random_state=self.seed,
             criterion=self.criterion,
             n_estimators=self.n_estimators, 
@@ -42,10 +42,10 @@ class RandomForest(MLModule):
         return parser
     
     def _fit(self, data, labels):
-        self.model.fit(data, labels)
+        self.classifier.fit(data, labels)
 
     def _predict(self, data, labels):
-        probs = self.model.predict_proba(data)
+        probs = self.classifier.predict_proba(data)
         preds = np.argmax(probs, axis=1)
         
         accuracy = accuracy_score(labels, preds)

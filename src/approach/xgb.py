@@ -23,7 +23,7 @@ class XGB(MLModule):
         self.max_depth = kwargs.get('xgb_max_depth', cf['xgb_max_depth'])
         self.eval_metric = kwargs.get('eval_metric', cf['xgb_eval_metric'])
         
-        self.model = XGBClassifier(
+        self.classifier = XGBClassifier(
             use_label_encoder=True,
             n_estimators=self.n_estimators, 
             max_depth=self.max_depth,
@@ -40,10 +40,10 @@ class XGB(MLModule):
         return parser
     
     def _fit(self, data, labels):
-        self.model.fit(data, labels)
+        self.classifier.fit(data, labels)
 
     def _predict(self, data, labels):
-        probs = self.model.predict_proba(data)
+        probs = self.classifier.predict_proba(data)
         preds = np.argmax(probs, axis=1)
         
         accuracy = accuracy_score(labels, preds)

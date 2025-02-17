@@ -17,7 +17,7 @@ dataset_config = {
         ),
         'label_column': 'LABEL_FULL',
     },
-    'in_sdn': {
+    'insdn': {
         'path': (
             f'{_BASE_DATA_PATH}/in_sdn/'
             'in_sdn_20pkts_6f_net_1024bytes_infsTO_network_class_over_50.parquet'

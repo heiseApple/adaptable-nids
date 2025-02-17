@@ -233,9 +233,11 @@ $RECYCLE.BIN/
 *.lnk
 
 # User folders and files
+log_dump/
 result*/
 test*/
 .vscode/
+joblog.txt
 *.pdf
 *.csv
 *.pkl

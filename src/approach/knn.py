@@ -26,7 +26,7 @@ class KNN(MLModule):
         self.p = kwargs.get('p', cf['knn_p'])
         self.metric = kwargs.get('metric', cf['knn_metric'])
         
-        self.model = KNeighborsClassifier(
+        self.classifier = KNeighborsClassifier(
             n_neighbors=self.n_neighbors,
             weights=self.weights,
             p=self.p,
@@ -44,10 +44,10 @@ class KNN(MLModule):
         return parser
     
     def _fit(self, data, labels):
-        self.model.fit(data, labels)
+        self.classifier.fit(data, labels)
 
     def _predict(self, data, labels):
-        probs = self.model.predict_proba(data)
+        probs = self.classifier.predict_proba(data)
         preds = np.argmax(probs, axis=1)
         
         accuracy = accuracy_score(labels, preds)

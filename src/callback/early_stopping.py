@@ -76,8 +76,8 @@ class EarlyStopping(Callback):
             # Model has not improved
             self.wait += 1
         
-            # Check patience
-            if self.wait >= self.patience:
+            # Check patience and min_epochs
+            if self.wait >= self.patience and epoch >= module.min_epochs:
                 # Stop training
                 module.should_stop = True
                 self.stopped_epoch = epoch + 1 
