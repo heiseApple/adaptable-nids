@@ -10,7 +10,6 @@ class SaveTrainLog(Callback):
     Callback that, at the end of each epoch, collects the training and validation
     postfix metrics and appends them as a new row to a file on disk.
     
-    The file can be in CSV or Parquet format.
     The file is stored in the "epoch_metrics" directory with the name "epoch_metrics.parquet".
     """
     def __init__(self, filename='epoch_metrics'):
