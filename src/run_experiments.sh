@@ -2,15 +2,15 @@
 # run_experiments.sh
 # This script runs experiments in a combinatorial fashion.
 # It accepts:
-#   --dataset (-d)   : a comma-separated list of datasets
-#   --seed (-s)      : a comma-separated list of seeds
-#   --approach (-a)  : a comma-separated list of approaches
-#   --is-flat (-f)   : a flag indicating flat structure (if present, add to command)
-#   --cpu (-c)       : an integer for the number of cores to use
-#   --extra-args (-e): additional arguments to pass to the python script
+#   --dataset (-d)      : a comma-separated list of datasets
+#   --seed (-s)         : a comma-separated list of seeds
+#   --approach (-a)     : a comma-separated list of approaches
+#   --is-flat (-f)      : a flag indicating flat structure (if present, add to command)
+#   --cpu (-c)          : an integer for the number of cores to use
+#   --extra-args (-e)   : extra arguments to pass directly to "python main.py"
 
 usage() {
-    echo "Usage: $0 --dataset <ds1,ds2,...> --seed <s1,s2,...> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--extra-args <args>]"
+    echo "Usage: $0 --dataset <ds1,ds2,...> --seed <s1,s2,...> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--extra-args \"<args>\"]"
     exit 1
 }
 
@@ -22,7 +22,6 @@ IS_FLAT=0
 CPU_CORES=""
 EXTRA_ARGS=""
 
-# Parse arguments
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -41,13 +40,8 @@ while [[ "$#" -gt 0 ]]; do
             CPU_CORES="$2"
             shift ;;
         -e|--extra-args)
-            shift
-            EXTRA_ARGS=()
-            while [[ "$#" -gt 0 ]] && [[ "$1" != -* ]]; do
-                EXTRA_ARGS+=("$1")
-                shift
-            done
-            ;;
+            EXTRA_ARGS="$2"
+            shift ;;
         *)
             echo "Unknown parameter passed: $1"
             usage ;;
@@ -81,11 +75,10 @@ for dataset in "${DATASET_ARR[@]}"; do
             # Compose log_dir: e.g. ../results_{dataset}_{approach}_6f_20p
             LOG_DIR="../results_${dataset}_${approach}_6f_20p"
             mkdir -p "${LOG_DIR}"
-            # Build the command:
-            CMD="python main.py --dataset ${dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG}"
-            CMD+=" ${EXTRA_ARGS[@]}"
+            # Build the command for execution
+            CMD="python main.py --dataset ${dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
             # Prepend a header with a separator and the exact command being executed.
-            FULL_CMD="( echo '$(printf '+%.0s' {1..100})'; echo 'Command: ${CMD}'; ${CMD} ) > ${LOG_DIR}/output.log 2>&1"
+            FULL_CMD="( echo '$(printf '=%.0s' {1..100})'; echo 'Command: ${CMD}'; ${CMD} ) > ${LOG_DIR}/output.log 2>&1"
             commands+=("$FULL_CMD")
         done
     done
