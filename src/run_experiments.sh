@@ -2,7 +2,8 @@
 # run_experiments.sh
 # This script runs experiments in a combinatorial fashion.
 # It accepts:
-#   --dataset (-d)      : a comma-separated list of datasets
+#   --src-dataset (-sd) : a comma-separated list of source datasets
+#   --trg-dataset (-td) : a comma-separated list of target datasets
 #   --seed (-s)         : a comma-separated list of seeds
 #   --approach (-a)     : a comma-separated list of approaches
 #   --is-flat (-f)      : a flag indicating flat structure (if present, add to command)
@@ -10,12 +11,13 @@
 #   --extra-args (-e)   : extra arguments to pass directly to "python main.py"
 
 usage() {
-    echo "Usage: $0 --dataset <ds1,ds2,...> --seed <s1,s2,...> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--extra-args \"<args>\"]"
+    echo "Usage: $0 --src-dataset <sd1,sd2,...> --trg-dataset <td1,td2,...> --seed <s1,s2,...> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--extra-args \"<args>\"]"
     exit 1
 }
 
 # Default values
-DATASETS=""
+SRC_DATASETS=""
+TRG_DATASETS=""
 SEEDS=""
 APPROACHES=""
 IS_FLAT=0
@@ -25,8 +27,11 @@ EXTRA_ARGS=""
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -d|--dataset)
-            DATASETS="$2"
+        -sd|--src-dataset)
+            SRC_DATASETS="$2"
+            shift ;;
+        -td|--trg-dataset)
+            TRG_DATASETS="$2"
             shift ;;
         -s|--seed)
             SEEDS="$2"
@@ -49,7 +54,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-if [[ -z "$DATASETS" || -z "$SEEDS" || -z "$APPROACHES" || -z "$CPU_CORES" ]]; then
+if [[ -z "$SRC_DATASETS" || -z "$TRG_DATASETS" || -z "$SEEDS" || -z "$APPROACHES" || -z "$CPU_CORES" ]]; then
     usage
 fi
 
@@ -61,7 +66,8 @@ else
 fi
 
 # Split comma-separated lists into arrays
-IFS=',' read -ra DATASET_ARR <<< "$DATASETS"
+IFS=',' read -ra SRC_DATASET_ARR <<< "$SRC_DATASETS"
+IFS=',' read -ra TRG_DATASET_ARR <<< "$TRG_DATASETS"
 IFS=',' read -ra SEED_ARR <<< "$SEEDS"
 IFS=',' read -ra APPROACH_ARR <<< "$APPROACHES"
 
@@ -69,17 +75,23 @@ IFS=',' read -ra APPROACH_ARR <<< "$APPROACHES"
 commands=()
 
 # Create experiments for each combination
-for dataset in "${DATASET_ARR[@]}"; do
-    for approach in "${APPROACH_ARR[@]}"; do
-        for seed in "${SEED_ARR[@]}"; do
-            # Compose log_dir: e.g. ../results_{dataset}_{approach}_6f_20p
-            LOG_DIR="../results_${dataset}_${approach}_6f_20p"
-            mkdir -p "${LOG_DIR}"
-            # Build the command for execution
-            CMD="python main.py --dataset ${dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
-            # Prepend a header with a separator and the exact command being executed.
-            FULL_CMD="( echo '$(printf '=%.0s' {1..100})'; echo 'Command: ${CMD}'; ${CMD} ) > ${LOG_DIR}/output.log 2>&1"
-            commands+=("$FULL_CMD")
+for src_dataset in "${SRC_DATASET_ARR[@]}"; do
+    for trg_dataset in "${TRG_DATASET_ARR[@]}"; do
+        # Skip iteration if src_dataset == trg_dataset
+        if [[ "$src_dataset" == "$trg_dataset" ]]; then
+            continue
+        fi
+        for approach in "${APPROACH_ARR[@]}"; do
+            for seed in "${SEED_ARR[@]}"; do
+                # Compose log_dir: e.g. ../results_{src_dataset}_{trg_dataset}_{approach}_6f_20p
+                LOG_DIR="../results_${src_dataset}_${trg_dataset}_${approach}_6f_20p"
+                mkdir -p "${LOG_DIR}"
+                # Build the command for execution
+                CMD="python main.py --src-dataset ${src_dataset} --trg-dataset ${trg_dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
+                # Prepend a header with a separator and the exact command being executed.
+                FULL_CMD="( echo '$(printf '=%.0s' {1..100})'; echo 'Command: ${CMD}'; ${CMD} ) > ${LOG_DIR}/output.log 2>&1"
+                commands+=("$FULL_CMD")
+            done
         done
     done
 done

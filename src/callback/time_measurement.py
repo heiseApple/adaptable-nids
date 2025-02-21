@@ -23,7 +23,6 @@ class TimeMeasurement(Callback):
             self.measurements = {}
         self.measurements['test_time'] = time.time() - self.test_start_time
 
-        dm = DirectoryManager()
-        detailed_dir = dm.mkdir('detailed')
+        detailed_dir = DirectoryManager().mkdir('detailed')
         with open(f'{detailed_dir}/time_measurements.json', 'w') as f:
             json.dump(self.measurements, f)

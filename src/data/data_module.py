@@ -6,7 +6,7 @@ from util.config import load_config
 
 
 class DataModule:
-    def __init__(self, train_dataset, val_dataset, test_dataset, appr_type, **kwargs):
+    def __init__(self, appr_type, train_dataset, val_dataset, test_dataset=None, **kwargs):
         cf = load_config()
         self.batch_size = kwargs.get('batch_size', cf['batch_size'])
         self.num_workers = kwargs.get('num_workers', cf['num_workers'])
@@ -14,7 +14,7 @@ class DataModule:
 
         self.train_x, self.train_y = train_dataset
         self.val_x, self.val_y = val_dataset
-        self.test_x, self.test_y = test_dataset
+        self.test_x, self.test_y = test_dataset or (None, None)
         
         self.approach_type = appr_type
         
@@ -31,7 +31,15 @@ class DataModule:
         parser.add_argument('--num_workers', type=int, default=cf['num_workers'])
         parser.add_argument('--pin_memory', action='store_true', default=cf['pin_memory'])
         return parser
-
+    
+    def set_train_dataset(self, dataset):
+        self.train_x, self.train_y = dataset
+        
+    def set_val_dataset(self, dataset):
+        self.val_x, self.val_y = dataset
+        
+    def set_test_dataset(self, dataset):
+        self.test_x, self.test_y = dataset
 
     def get_train_data(self):
         

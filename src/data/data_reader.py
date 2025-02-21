@@ -1,7 +1,7 @@
-import os
 import json
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 
 from data.dataset_config import dataset_config
@@ -27,21 +27,21 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     full_path = dc['path']
     label_column = dc.get('label_column', 'LABEL')
     
-    base_name, ext = os.path.splitext(full_path)
-    prep_df_path = f'{base_name}_prep{seed}{ext}'
+    p = Path(full_path)
+    prep_df_path = p.parent / f'{p.stem}_{label_column}_prep{seed}{p.suffix}'
     
-    if not os.path.exists(prep_df_path):
+    if not prep_df_path.exists():
         # First time reading the dataset 
-        print('Processing dataframe...')
+        print(f'Processing {dataset} dataframe...')
         
         cf = load_config()
         
         df = pd.read_parquet(full_path)
-        df = _preprocess_dataframe(df, label_column, os.path.dirname(full_path), cf)
+        df = _preprocess_dataframe(df, label_column, p.parent, cf)
         df.to_parquet(prep_df_path)
     else:
         # Already pre-processed
-        print('WARNING: using pre-processed dataframe.')
+        print(f'WARNING: using pre-processed dataframe for {dataset}.')
         df = pd.read_parquet(prep_df_path)
             
     # Compute PSQ input N_p x F
@@ -59,7 +59,7 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     return dataset_dict
 
 
-def _preprocess_dataframe(df, label_column, path, config):
+def _preprocess_dataframe(df, label_column, parent_dir, config):
     """
     Preprocess the dataframe by performing label encoding, field padding, and scaling.
     """
@@ -74,7 +74,7 @@ def _preprocess_dataframe(df, label_column, path, config):
     
     # Save encoding informations
     label_conv = dict(zip(le.classes_, le.transform(le.classes_).tolist()))
-    with open(f'{path}/label_conv.json', 'w') as f:
+    with open(parent_dir / 'label_conv.json', 'w') as f:
         json.dump(label_conv, f)
         
     processed_fields = []

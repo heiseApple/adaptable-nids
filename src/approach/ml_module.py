@@ -12,7 +12,7 @@ ml_approaches = {
 
 class MLModule:
     
-    def __init__(self, datamodule, callbacks=None, **kwargs):
+    def __init__(self, datamodule=None, callbacks=None, **kwargs):
         cf = load_config()
 
         self.datamodule = datamodule
@@ -60,7 +60,7 @@ class MLModule:
         for cb in self.callbacks:
             cb.on_test_end(self)
         
-    def validation(self):
+    def validate(self):
         self.phase = 'val'
         
         for cb in self.callbacks:

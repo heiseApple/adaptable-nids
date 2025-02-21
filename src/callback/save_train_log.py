@@ -1,27 +1,26 @@
-import os
 import pandas as pd
+from pathlib import Path
 
 from callback.callback_lib import Callback
 from util.directory_manager import DirectoryManager
 
 
 class SaveTrainLog(Callback):
-    """
-    Callback that, at the end of each epoch, collects the training and validation
-    postfix metrics and appends them as a new row to a file on disk.
-    
-    The file is stored in the "epoch_metrics" directory with the name "epoch_metrics.parquet".
-    """
-    def __init__(self, filename='epoch_metrics'):
+    def __init__(self, filename='epoch_metrics', write_interval=5):
+        """
+        Callback that, at the end of each epoch, collects the training and validation
+        postfix metrics and appends them as a new row to a file on disk.
+        
+        The file is stored in the "epoch_metrics" directory with the name "epoch_metrics.parquet".
+        """
         self.filename = filename
-        dm = DirectoryManager()
-        self.fullpath = f'{dm.log_dir}/{self.filename}.parquet'
+        self.write_interval = write_interval
+        self.fullpath = Path(DirectoryManager().log_dir) / f'{self.filename}.parquet'
+        # Store rows in memory before writing
+        self.metrics_buffer = []
 
     def on_epoch_end(self, module, epoch):
-        """
-        Collects the epoch metrics and appends them as a new row to the metrics file.
-        """
-        metrics = {'epoch': epoch+1}
+        metrics = {'epoch': epoch + 1}
         
         if module.epoch_outputs is not None:
             metrics['trn_loss'] = module.epoch_outputs.get('train_loss', 0)
@@ -32,11 +31,23 @@ class SaveTrainLog(Callback):
             metrics['val_loss'] = module.epoch_outputs.get('loss', 0)
         else:
             raise ValueError('module.epoch_outputs is None, cannot collect epoch metrics.')
-        
-        df_epoch = pd.DataFrame([metrics])
-        if os.path.exists(self.fullpath):
+
+        self.metrics_buffer.append(metrics)
+
+        if (epoch + 1) % self.write_interval == 0:
+            self._flush_to_disk()
+
+    def on_fit_end(self, _):
+        # Optionally flush anything left at the end
+        if len(self.metrics_buffer) > 0:
+            self._flush_to_disk()
+    
+    def _flush_to_disk(self):
+        df_new_data = pd.DataFrame(self.metrics_buffer)
+        if self.fullpath.exists():
             existing_df = pd.read_parquet(self.fullpath)
-            df_new = pd.concat([existing_df, df_epoch], ignore_index=True)
-            df_new.to_parquet(self.fullpath, index=False, compression='snappy')
+            combined = pd.concat([existing_df, df_new_data], ignore_index=True)
+            combined.to_parquet(self.fullpath, index=False, compression='snappy')
         else:
-            df_epoch.to_parquet(self.fullpath, index=False, compression='snappy')
+            df_new_data.to_parquet(self.fullpath, index=False, compression='snappy')
+        self.metrics_buffer = []

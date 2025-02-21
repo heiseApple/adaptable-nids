@@ -2,7 +2,8 @@
 
 # DATA, DATASET
 base_data_path: "../../data"
-dataset:
+src-dataset:
+trg-dataset:
 
 # INPUT
 num_pkts: 20
@@ -19,6 +20,7 @@ seed: 0
 gpu: False
 deterministic: True
 log_dir: "../results"
+n_task: 1
 approach:
 
 # DL TRAINING

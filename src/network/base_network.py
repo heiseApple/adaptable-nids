@@ -59,10 +59,11 @@ class BaseNetwork(nn.Module, ABC):
         dm = DirectoryManager()
         path = dm.mkdir('network_weights')
         weights_path = f'{path}/{filename}.pt'
+        dm.checkpoint_path = weights_path
         torch.save(self.state_dict(), weights_path)
         return weights_path
 
-    def load_weights(self, path):
+    def load_weights(self, path=None):
         """
         Loads the model weights from a specified file path.
         """
@@ -76,6 +77,34 @@ class BaseNetwork(nn.Module, ABC):
             print(name, param.requires_grad)
         print('')
         
+    def summarize_module(self, print_fn=print):
+        """
+        Prints a summary of the module's layers, their shapes, and the number of parameters.
+        """
+        print_fn('-'*80)
+        print_fn(f"{'Layer (type/param)':<35} | {'Shape':<20} | # Params")
+        print_fn('-'*80)
+        
+        total_params = 0
+        trainable_params = 0
+
+        for name, param in self.named_parameters():
+            param_count = param.numel()
+            
+            total_params += param_count
+            if param.requires_grad:
+                trainable_params += param_count
+            
+            print_fn(f'{name:<35} | {str(list(param.shape)):<20} | {param_count}')
+
+        non_trainable_params = total_params - trainable_params
+
+        print_fn('-'*80)
+        print_fn(f'Total params:         {total_params}')
+        print_fn(f'Trainable params:     {trainable_params}')
+        print_fn(f'Non-trainable params: {non_trainable_params}')
+        print_fn('-'*80)
+
     def _get_padding(self, kernel, padding='same'):
         # http://d2l.ai/chapter_convolutional-neural-networks/padding-and-strides.html
         pad = kernel - 1

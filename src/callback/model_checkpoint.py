@@ -2,6 +2,7 @@ import os
 
 from callback.callback_lib import Callback
 
+
 class ModelCheckpoint(Callback):
     """
     Callback for checkpointing: saves the model when the monitored metric improves

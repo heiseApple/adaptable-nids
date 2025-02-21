@@ -19,18 +19,19 @@ def get_approach_type(approach_name):
         raise ValueError(f"Approach '{approach_name}' not found in ML or DL approaches.")
     
 
-def get_approach(approach_name, datamodule, **kwargs):
+def get_approach(approach_name, datamodule=None, **kwargs):
     callbacks = [SaveOutputs(), TimeMeasurement()]
     cf = load_config()
+    appr_type = kwargs.get('appr_type', None)
     
-    if approach_name in ml_approaches:
+    if appr_type == 'ml':
         return MLModule.get_approach(
             appr_name=approach_name,
             datamodule=datamodule,
             callbacks=callbacks,
             **kwargs
         )
-    elif approach_name in dl_approaches:
+    elif appr_type == 'dl':
         callbacks.extend([
             EarlyStopping(
                 monitor=cf['es_monitor'],

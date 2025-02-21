@@ -13,7 +13,7 @@ dl_approaches = {
 
 class DLModule:
     
-    def __init__(self, datamodule, callbacks=None, **kwargs):
+    def __init__(self, datamodule=None, callbacks=None, **kwargs):
         cf = load_config()
         
         gpu = kwargs.get('gpu', cf['gpu'])
@@ -21,7 +21,7 @@ class DLModule:
         print(f'Using device: {self.device}')
         
         self.net = build_network(**kwargs).to(self.device)
-        print(self.net)
+        self.net.summarize_module()
         
         self.datamodule = datamodule
         self.num_classes = kwargs.get('num_classes', cf['num_classes'])
@@ -94,7 +94,7 @@ class DLModule:
         for cb in self.callbacks:
             cb.on_test_end(self)
         
-    def validation(self):
+    def validate(self):
         self.phase = 'val'
         
         for cb in self.callbacks:
