@@ -28,7 +28,7 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     label_column = dc.get('label_column', 'LABEL')
     
     p = Path(full_path)
-    prep_df_path = p.parent / f'{p.stem}_{label_column}_prep{seed}{p.suffix}'
+    prep_df_path = p.parent / f'{p.stem}_{label_column.lower()}_prep{seed}{p.suffix}'
     
     if not prep_df_path.exists():
         # First time reading the dataset 
@@ -73,8 +73,11 @@ def _preprocess_dataframe(df, label_column, parent_dir, config):
     df['ENC_LABEL'] = le.transform(df[label_column])
     
     # Save encoding informations
-    label_conv = dict(zip(le.classes_, le.transform(le.classes_).tolist()))
-    with open(parent_dir / 'label_conv.json', 'w') as f:
+    label_conv = {
+        str(k): int(v)
+        for k, v in zip(le.classes_, le.transform(le.classes_))
+    }
+    with open(parent_dir / f'{label_column.lower()}_conv.json', 'w') as f:
         json.dump(label_conv, f)
         
     processed_fields = []

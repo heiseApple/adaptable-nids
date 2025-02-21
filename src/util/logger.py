@@ -66,7 +66,8 @@ class Logger:
 
         dataset_name = self.src_dataset_name if task == 'src' else self.trg_dataset_name
         dc = dataset_config[dataset_name]
-        label_conv_path = Path(dc['path']).parent / 'label_conv.json'
+        label_column = dc.get('label_column', 'label').lower()
+        label_conv_path = Path(dc['path']).parent / f'{label_column}_conv.json'
         with label_conv_path.open('r') as f:
             label_conv = json.load(f)
 

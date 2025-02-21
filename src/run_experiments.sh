@@ -84,7 +84,7 @@ for src_dataset in "${SRC_DATASET_ARR[@]}"; do
         for approach in "${APPROACH_ARR[@]}"; do
             for seed in "${SEED_ARR[@]}"; do
                 # Compose log_dir: e.g. ../results_{src_dataset}_{trg_dataset}_{approach}_6f_20p
-                LOG_DIR="../results_${src_dataset}_${trg_dataset}_${approach}_6f_20p"
+                LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_6f_20p"
                 mkdir -p "${LOG_DIR}"
                 # Build the command for execution
                 CMD="python main.py --src-dataset ${src_dataset} --trg-dataset ${trg_dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
