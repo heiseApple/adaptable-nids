@@ -28,9 +28,9 @@ class EarlyStopping(Callback):
     def __init__(self, monitor, mode, patience, min_delta, verbose=True):
         super().__init__()
         
+        self.patience = patience if patience != -1 else float('inf')
         self.monitor = monitor
         self.mode = mode
-        self.patience = patience
         self.min_delta = min_delta
         self.verbose = verbose
         

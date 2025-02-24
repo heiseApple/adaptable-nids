@@ -62,18 +62,14 @@ class Trainer:
             if self.args.appr_type == 'ml':
                 raise ValueError('ML approaches do not support multiple tasks')
             
-            # Train, val, and test on src
-            print(f'[Trainer] Starting task on source dataset: {self.args.src_dataset}')
-            approach.datamodule = self.data_manager.get_datamodule(**src_splits)
-            self._fit_evaluate(approach)
-            self._test(approach)
+            if not self.args.skip_t1:
+                # Train, val, and test on src
+                print(f'[Trainer] Starting task on source dataset: {self.args.src_dataset}')
+                approach.datamodule = self.data_manager.get_datamodule(**src_splits)
+                self._fit_evaluate(approach)
+                self._test(approach)
             
-            # Reset approach 
-            dm = DirectoryManager() 
-            dm.update_log_dir() # Switch the log_dir from src to trg 
-            approach = get_approach(approach_name=self.args.approach, **self.dict_args)
-            approach.net.load_weights(dm.checkpoint_path) # Loads weights from the first task
-            print(f'[Trainer] Loaded network weights from {dm.checkpoint_path}')
+            approach = self._reset_approach(weights_path=self.args.weights_path)
             
             # Train, val, and test on trg
             print(f'[Trainer] Starting task on target dataset: {self.args.trg_dataset}')
@@ -98,6 +94,19 @@ class Trainer:
             
         approach.test()
             
+            
+    def _reset_approach(self, weights_path=None):
+        dm = DirectoryManager() 
+        dm.update_log_dir() # Switch the log_dir from src to trg 
+        approach = get_approach(
+            approach_name=self.args.approach, 
+            fs_task=self.args.k is not None, 
+            **self.dict_args
+        )
+        # Loads weights from the first task or from weights_path
+        approach.net.load_weights(weights_path or dm.checkpoint_path) 
+        print(f'[Trainer] Loaded network weights from {weights_path or dm.checkpoint_path}')
+        return approach
             
     def _save_dict_args(self):
         dm = DirectoryManager(self.args.log_dir)

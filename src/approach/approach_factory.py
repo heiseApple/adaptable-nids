@@ -19,10 +19,12 @@ def get_approach_type(approach_name):
         raise ValueError(f"Approach '{approach_name}' not found in ML or DL approaches.")
     
 
-def get_approach(approach_name, datamodule=None, **kwargs):
-    callbacks = [SaveOutputs(), TimeMeasurement()]
+def get_approach(approach_name, datamodule=None, fs_task=False, **kwargs):
+    callbacks = [SaveOutputs(), TimeMeasurement()] # Base callbacks for both ML and DL approaches
     cf = load_config()
     appr_type = kwargs.get('appr_type', None)
+    # Deactivate early stopping if the task on trg dataset is few-shot
+    es_patince = cf['es_patience'] if not fs_task else -1
     
     if appr_type == 'ml':
         return MLModule.get_approach(
@@ -36,7 +38,7 @@ def get_approach(approach_name, datamodule=None, **kwargs):
             EarlyStopping(
                 monitor=cf['es_monitor'],
                 mode=cf['es_mode'],
-                patience=cf['es_patience'],
+                patience=es_patince,
                 min_delta=cf['es_min_delta']
             ),
             ModelCheckpoint(

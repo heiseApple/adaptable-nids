@@ -24,9 +24,14 @@ def parse_arguments():
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
     parser.add_argument('--n-tasks', type=int, default=cf['n_task'], choices=[1, 2], 
                         help='with 1 the model is trained on both src and trg dataset at the same time,\
-                              with 2 the model is first trained on src then on dst')
+                              with 2 the model is first trained on src then on trg')
     parser.add_argument('--approach', type=str, default=cf['approach'], help='ML or DL approach to use')
     parser.add_argument('--network', type=str, default=cf['network'], help='Network to use')
+    parser.add_argument('--weights-path', type=str, default=cf['weights_path'], 
+                        help='Path to the .pt file containing the weights for the network')
+    parser.add_argument('--skip-t1', action='store_true', default=cf['skip_t1'], 
+                        help='Skip the first task on src dataset, used only when n_task 2')
+    parser.add_argument('--k', type=int, default=cf['k'], help='Number of shots for the target dataset')
     # Data args
     parser.add_argument('--src-dataset', type=str, default=cf['src-dataset'], 
                         help='Source dataset to use')
@@ -49,6 +54,9 @@ def parse_arguments():
     if args.trg_dataset==args.src_dataset:
         raise ValueError(f"Target dataset cannot be the same as source dataset: '{args.src_dataset}")
     
+    if args.skip_t1 and args.n_tasks==2:
+        print('WARNING: skipping task on src dataset')
+            
     args.appr_type = get_approach_type(args.approach) 
 
     return args

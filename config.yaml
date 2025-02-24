@@ -21,7 +21,9 @@ gpu: False
 deterministic: True
 log_dir: "../results"
 n_task: 1
+skip_t1:
 approach:
+k:
 
 # DL TRAINING
 lr: 0.0001
@@ -55,6 +57,7 @@ pin_memory: True
 
 # DL NETWORK
 network: 'lopez17cnn'
+weights_path:
 net_scale: 1
 num_classes: 0
 

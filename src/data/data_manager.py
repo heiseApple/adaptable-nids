@@ -15,10 +15,6 @@ class DataManager:
         self.src_dataset = None
         self.trg_dataset = None
         
-        self.src_splits = None
-        self.trg_splits = None
-        self.num_classes = None
-        
         self.appr_type = self.args.appr_type
         self.seed = self.args.seed
         
@@ -41,13 +37,22 @@ class DataManager:
         Splits the source dataset and, if present, also the target dataset.
         It also sets the number of classes and checks for compatibility.
         """
-        self.src_splits, self.num_classes = self._train_val_test_split(dataset=self.src_dataset)
+        src_splits, num_classes = self._train_val_test_split(dataset=self.src_dataset)
+        
         if self.trg_dataset:
-            self.trg_splits, trg_num_classes = self._train_val_test_split(dataset=self.trg_dataset)
-            assert self.num_classes == trg_num_classes, (
+            trg_splits, trg_num_classes = self._train_val_test_split(dataset=self.trg_dataset)
+            assert num_classes == trg_num_classes, (
                 'Mismatch between the classes of the source and target datasets'
             )
-        return self.src_splits, self.trg_splits, self.num_classes
+            # For a few-shot setup (k samples per trg class)
+            if self.args.k is not None:
+                x_sampled, y_sampled = self._sample_k_per_class(trg_splits['train'], k=self.args.k)
+                trg_splits['train'] = (x_sampled, y_sampled) 
+                trg_splits['val'] = (x_sampled, y_sampled)
+        else:
+            trg_splits = None 
+            
+        return src_splits, trg_splits, num_classes
     
     def get_datamodule(self, train, val, test=None):
         """Creates the DataModule from the provided splits"""
@@ -58,6 +63,11 @@ class DataManager:
             appr_type=self.appr_type
         )
 
+    def concat_dataset(self, d1, d2):
+        x1, y1 = d1
+        x2, y2 = d2
+        return np.concatenate([x1, x2]), np.concatenate([y1, y2])
+    
     def _train_val_test_split(self, dataset):
         cf = load_config()
         x = dataset['data']
@@ -83,7 +93,47 @@ class DataManager:
             'test': (x_test, y_test),
         }, len(np.unique(y))
         
-    def concat_dataset(self, d1, d2):
-        x1, y1 = d1
-        x2, y2 = d2
-        return np.concatenate([x1, x2]), np.concatenate([y1, y2])
+    def _sample_k_per_class(self, data, k):
+        x, y = data
+        rng = np.random.default_rng(self.args.seed)
+        
+        # Retrieve unique classes and their counts
+        classes, counts = np.unique(y, return_counts=True)
+
+        # Ensure every class has at least k samples
+        if np.any(counts < k):
+            raise ValueError(f'Not all classes have at least {k} samples')
+        
+        # Generate a random permutation of all sample indices
+        perm = rng.permutation(len(y))
+        # Reorder labels according to the permutation
+        y_perm = y[perm]
+        
+        # Map each label in y_perm to its index in the sorted array of unique classes
+        idx_in_classes = np.searchsorted(classes, y_perm)
+        
+        # Prepare a one-hot matrix for each sample vs. each class
+        num_classes = len(classes)
+        one_hot = np.zeros((len(y), num_classes), dtype=int)
+        one_hot[np.arange(len(y)), idx_in_classes] = 1
+        
+        # Compute the cumulative sum column-wise
+        # one_hot_csum[i, c] = number of samples of class c up to (and including) index i
+        one_hot_csum = one_hot.cumsum(axis=0)
+        
+        # Determine the rank of each sample within its class
+        # (i.e., 1st sample of that class, 2nd, etc.)
+        rank_of_sample = one_hot_csum[np.arange(len(y)), idx_in_classes]
+        
+        # Keep only the first k samples for each class
+        mask = rank_of_sample <= k
+        
+        # Retrieve original indices from the permuted list
+        final_indices = perm[mask]
+        
+        # Sort
+        sort_order = np.argsort(y[final_indices])
+        final_indices = final_indices[sort_order]
+
+        # Return the sampled data and labels
+        return x[final_indices], y[final_indices]
