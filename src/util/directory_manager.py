@@ -40,7 +40,7 @@ class DirectoryManager:
         Update self.log_dir by replacing 'src' with 'trg' in the directory path.
         """
         if 'src' in self.log_dir.parts:
-            self.log_dir = Path(str(self.log_dir).replace('/src', '/trg'))
+            self.log_dir = Path(str(self.log_dir).replace('src', 'trg'))
             self._ensure_directory(self.log_dir)
         else:
             raise ValueError("The current log_dir does not contain 'src' and cannot be updated to 'trg'.")
