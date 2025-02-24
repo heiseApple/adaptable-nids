@@ -36,7 +36,8 @@ class Trainer:
         if self.args.trg_dataset is None:
             # Train, validation, and test only on src_dataset
             approach.datamodule = self.data_manager.get_datamodule(**src_splits) 
-            self._train_evaluate(approach)
+            self._fit_evaluate(approach)
+            self._test(approach)
             return
         
         if self.args.n_tasks == 1:
@@ -49,13 +50,12 @@ class Trainer:
             approach.datamodule = self.data_manager.get_datamodule(
                 train=combined_train,
                 val=src_splits['val'],
+                test=src_splits['test']
             )
+            self._fit_evaluate(approach)
             # Test on both
-            test_datasets = {
-                'src': src_splits['test'],
-                'trg': trg_splits['test']
-            }
-            self._train_evaluate(approach, test_datasets)
+            self._test(approach) # On src
+            self._test(approach, trg_test_dataset=trg_splits['test']) # On trg
             
         else:
             # n_task == 2 -> sequential training
@@ -65,7 +65,8 @@ class Trainer:
             # Train, val, and test on src
             print(f'[Trainer] Starting task on source dataset: {self.args.src_dataset}')
             approach.datamodule = self.data_manager.get_datamodule(**src_splits)
-            self._train_evaluate(approach)
+            self._fit_evaluate(approach)
+            self._test(approach)
             
             # Reset approach 
             dm = DirectoryManager() 
@@ -77,22 +78,25 @@ class Trainer:
             # Train, val, and test on trg
             print(f'[Trainer] Starting task on target dataset: {self.args.trg_dataset}')
             approach.datamodule = self.data_manager.get_datamodule(**trg_splits)
-            self._train_evaluate(approach)
+            self._adapt_evaluate(approach)
+            self._test(approach)
             
-            
-    def _train_evaluate(self, approach, test_datasets=None):
+    
+    def _fit_evaluate(self, approach):
         approach.fit()
         approach.validate()
         
-        if test_datasets:
-            for task, test_ds in test_datasets.items():
-                if task == 'trg':
-                    print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
-                    DirectoryManager().update_log_dir() # Switch the log_dir from src to trg 
-                approach.datamodule.set_test_dataset(test_ds)
-                approach.test()
-        else:
-            approach.test()
+    def _adapt_evaluate(self, approach):
+        approach.adapt()
+        approach.validate()
+        
+    def _test(self, approach, trg_test_dataset=None):
+        if trg_test_dataset is not None:
+            print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
+            DirectoryManager().update_log_dir() # Switch the log_dir from src to trg 
+            approach.datamodule.set_test_dataset(trg_test_dataset)
+            
+        approach.test()
             
             
     def _save_dict_args(self):

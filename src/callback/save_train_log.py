@@ -37,6 +37,11 @@ class SaveTrainLog(Callback):
         if (epoch + 1) % self.write_interval == 0:
             self._flush_to_disk()
 
+    def on_adaptation_end(self, _):
+        # Optionally flush anything left at the end
+        if len(self.metrics_buffer) > 0:
+            self._flush_to_disk()
+            
     def on_fit_end(self, _):
         # Optionally flush anything left at the end
         if len(self.metrics_buffer) > 0:

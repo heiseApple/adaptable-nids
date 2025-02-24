@@ -58,6 +58,9 @@ network: 'lopez17cnn'
 net_scale: 1
 num_classes: 0
 
+# DL BASELINE
+adaptation_strat: ''
+
 # RANDOM FOREST
 rf_criterion: 'gini'
 rf_n_estimators: 100

@@ -14,6 +14,12 @@ class TimeMeasurement(Callback):
 
     def on_fit_end(self, _):
         self.measurements = {'train_time': time.time() - self.train_start_time}
+        
+    def on_adaptation_start(self, _):
+        self.train_start_time = time.time()
+
+    def on_adaptation_end(self, _):
+        self.measurements = {'train_time': time.time() - self.train_start_time}
 
     def on_test_start(self, _):
         self.test_start_time = time.time()

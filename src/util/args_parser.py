@@ -5,7 +5,7 @@ from approach import (
     RandomForest,
     XGB,
     KNN,
-    Scratch,
+    Baseline,
     get_approach_type
 )
 
@@ -18,7 +18,7 @@ def parse_arguments():
     parser = RandomForest.add_appr_specific_args(parser)
     parser = XGB.add_appr_specific_args(parser)
     parser = KNN.add_appr_specific_args(parser)
-    parser = Scratch.add_appr_specific_args(parser)
+    parser = Baseline.add_appr_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--gpu', action='store_true', default=cf['gpu'], help='Use GPU if available')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')

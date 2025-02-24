@@ -27,6 +27,14 @@ class Callback:
         # Called at the end of the test.
         pass
     
+    def on_adaptation_start(self, module):
+        # Called once, at the beginning of the adaptation.
+        pass
+
+    def on_adaptation_end(self, module):
+        # Called once, at the end of the adaptation.
+        pass
+    
     def on_epoch_start(self, module, epoch):
         # Called at the beginning of a fit epoch
         pass

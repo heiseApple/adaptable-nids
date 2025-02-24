@@ -72,7 +72,7 @@ class BaseNetwork(nn.Module, ABC):
         #     print(name, param.device, torch.sum(param).item())
         
     def trainability_info(self):
-        print('\nTRAINABILITY INFO')
+        print('\n[TrainabilityInfo]')
         for name, param in self.named_parameters():
             print(name, param.requires_grad)
         print('')

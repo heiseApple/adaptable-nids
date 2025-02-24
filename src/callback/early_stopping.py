@@ -38,14 +38,20 @@ class EarlyStopping(Callback):
         self.best_score = None
         self.wait = 0
         self.stopped_epoch = 0
+        
+    def on_adaptation_start(self, module):
+        self._init_inner_vars(module)
     
     def on_fit_start(self, module):
+        self._init_inner_vars(module)
+        
+    def _init_inner_vars(self, module):
         # Init inner vars and module.should_stop to False
         self.best_score = None
         self.wait = 0
         self.stopped_epoch = 0
         module.should_stop = False
-        
+                
     def on_epoch_end(self, module, epoch):
         if self.monitor not in module.epoch_outputs:
             raise ValueError(f'Monitor value "{self.monitor}" not found in module outputs.')

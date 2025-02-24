@@ -4,20 +4,33 @@ from tqdm import tqdm
 from torchmetrics import Accuracy, F1Score
 
 from approach.dl_module import DLModule
+from callback.freeze_backbone import FreezeBackbone
+from util.config import load_config
 
 
-class Scratch(DLModule):
+class Baseline(DLModule):
     """
-    TODO
+    Baseline class for a deep learning module that includes training, validation, 
+    and adaptation strategies.
+    Attributes:
+        criterion (nn.Module): Loss function used for training.
+        adaptation_strat (str): Strategy for model adaptation, either 'finetuning' or 'freezing'.
     """
-    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        cf = load_config()
+        
         self.criterion = nn.CrossEntropyLoss()
+        self.adaptation_strat = kwargs.get('adaptation_strat', cf['adaptation_strat'])
+        self.callbacks.append(FreezeBackbone())
+        
         
     @staticmethod
     def add_appr_specific_args(parent_parser):
+        cf = load_config()
         parser = DLModule.add_appr_specific_args(parent_parser)
+        parser.add_argument('--adaptation-strat', type=str, default=cf['adaptation_strat'], 
+                            choices=['finetuning', 'freezing'])
         return parser
     
     
@@ -49,7 +62,7 @@ class Scratch(DLModule):
                 # Move data on self.device
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
             
-                # Forward pass e Loss
+                # Forward pass and Loss
                 logits = self.net(batch_x)
                 loss = self.criterion(logits, batch_y.long())
 
@@ -96,7 +109,6 @@ class Scratch(DLModule):
         with torch.no_grad():
             
             for batch_x, batch_y in tqdm(dataloader, desc=desc, leave=not self.phase=='train'):
-                # Move data on self.device
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
                 
                 logits = self.net(batch_x)
@@ -123,3 +135,7 @@ class Scratch(DLModule):
             'preds': preds.detach().cpu().numpy(),
             'logits': logits.detach().cpu().numpy(),
         }
+        
+        
+    def _adapt(self, train_dataloader, val_dataloader):
+        self._fit(train_dataloader, val_dataloader)

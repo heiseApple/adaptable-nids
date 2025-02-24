@@ -7,7 +7,7 @@ from util.config import load_config
 from network.network_factory import build_network
 
 dl_approaches = {
-    'scratch' : 'Scratch',
+    'baseline' : 'Baseline',
 }
 
 
@@ -32,7 +32,7 @@ class DLModule:
         
         self.max_epochs = kwargs.get('max_epochs', cf['max_epochs'])
         self.min_epochs = kwargs.get('min_epochs', cf['min_epochs'])
-        
+                
         self.phase = None
         self.outputs = None
         
@@ -104,15 +104,30 @@ class DLModule:
         self.outputs = self._predict(val_dataloader)
         
         for cb in self.callbacks:
-            cb.on_validation_end(self)
+            cb.on_validation_end(self)   
+            
+    def adapt(self):
+        print('='*100)
+        self.phase = 'train'
+
+        for cb in self.callbacks: 
+            cb.on_adaptation_start(self)
+            
+        # Adaptation (on trg dataset) dataloder set by the trainer
+        train_dataloader = self.datamodule.get_train_data() 
+        val_dataloader = self.datamodule.get_val_data()
+        self._adapt(train_dataloader, val_dataloader)
+
+        for cb in self.callbacks:
+            cb.on_adaptation_end(self) 
             
     ####
     # SCHEDULER AND OPTIMIZER
     ####
     
-    def configure_optimizers(self):
+    def configure_optimizers(self, params=None):
         cf = load_config()
-        self.optimizer = optim.Adam(self.net.parameters(), lr=self.lr)
+        self.optimizer = optim.Adam(params or self.net.parameters(), lr=self.lr)
         
         if self.lr_strat == 'none':
             self.scheduler = None
