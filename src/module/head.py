@@ -34,6 +34,10 @@ class NNHead(nn.Module):
             self.labels_db = torch.cat([self.labels_db, y], dim=0)
 
     def forward(self, x):
+        # L2 normalization for Euclidean distance
+        x = nn.functional.normalize(x, p=2, dim=1)
+        self.embeddings_db = nn.functional.normalize(self.embeddings_db, p=2, dim=1)
+        
         # Compute all pairwise distances between queries and support samples
         distance_matrix = torch.cdist(x, self.embeddings_db)  # [x, self.embeddings_db]
         
@@ -63,7 +67,6 @@ class NNHead(nn.Module):
         # # Generate predictions
         # idx = torch.argmax(soft_values, dim=1)
         # y_pred = classes[idx] 
-        
         return logits
     
     
