@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from callback.callback_lib import Callback
 
@@ -42,12 +42,16 @@ class ModelCheckpoint(Callback):
 
         if improved:
             if self.weights_path is not None:
-                os.remove(self.weights_path) # Remove old checkpoint_ep.pt
+                Path(self.weights_path).unlink()  # Remove old checkpoint_ep.pt
             self.best_score = current
             self.weights_path = module.net.save_weights(f'{self.checkpoint_filename}_{epoch+1}')
             
     def _load_weighs(self, module, phase):
-        if os.path.exists(self.weights_path):
+        if self.weights_path is None:
+            print(f'[ModelCheckpoint] Checkpoint path is None, using current weights.')
+            return
+        
+        if Path(self.weights_path).exists():
             print(f"[ModelCheckpoint] Loading checkpoint from {self.weights_path} for {phase}.")
             module.net.load_weights(self.weights_path)
         else:

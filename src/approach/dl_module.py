@@ -1,13 +1,16 @@
 import torch
 import importlib
+from tqdm import tqdm
 from argparse import ArgumentParser
 from torch import optim
+from torchmetrics import Accuracy, F1Score
 
 from util.config import load_config
 from network.network_factory import build_network
 
 dl_approaches = {
     'baseline' : 'Baseline',
+    'rfs' : 'RFS',
 }
 
 
@@ -63,9 +66,9 @@ class DLModule:
         parser.add_argument('--min-epochs', type=int, default=cf['min_epochs'])
         return parser
     
-    ####
-    # TRAIN, VALIDATION AND TEST
-    ####
+    #------------------------------------
+    # TRAIN, VALIDATION, TEST, ADAPTATION
+    #------------------------------------
     
     def fit(self):
         print('='*100)
@@ -104,7 +107,7 @@ class DLModule:
         self.outputs = self._predict(val_dataloader)
         
         for cb in self.callbacks:
-            cb.on_validation_end(self)   
+            cb.on_validation_end(self)  
             
     def adapt(self):
         print('='*100)
@@ -121,9 +124,116 @@ class DLModule:
         for cb in self.callbacks:
             cb.on_adaptation_end(self) 
             
-    ####
+    #-------------
+    # TEMPLATE FIT
+    #-------------
+    
+    def _fit(self, train_dataloader, val_dataloader):
+        
+        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
+        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
+        
+        for epoch in range(self.max_epochs):
+            self.net.train()
+
+            for cb in self.callbacks:
+                cb.on_epoch_start(self, epoch)
+
+            running_loss = 0.0
+            all_labels, all_preds = [], []
+
+            postfix = {
+                'trn loss': f'{self.epoch_outputs["train_loss"]:.4f}', 
+                'trn acc':  f'{self.epoch_outputs["train_accuracy"]:.4f}',
+                'trn f1':   f'{self.epoch_outputs["train_f1_score_macro"]:.4f}',
+                f'val {self.sch_monitor}': f'{val_score:.4f}'
+            } if epoch > 0 else {}
+            train_loop = tqdm(
+                train_dataloader, desc=f'Ep[{epoch+1}/{self.max_epochs}]',  
+                postfix=postfix, leave=False
+            )
+            for batch_x, batch_y in train_loop:
+                # Move data on self.device
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+            
+                # Forward pass and Loss
+                loss, logits = self._fit_step(batch_x, batch_y.long())
+
+                # Backward pass
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+                running_loss += loss.item()
+
+                # Metrics
+                preds = torch.argmax(logits, dim=1)
+                all_labels.append(batch_y)
+                all_preds.append(preds)
+                
+            # Validation on fit epoch end
+            self.epoch_outputs = self._predict(val_dataloader, on_train_epoch_end=True)
+            val_score = self.epoch_outputs[self.sch_monitor]
+            
+            self.epoch_outputs['train_loss'] = running_loss / len(train_dataloader)
+            self.epoch_outputs['train_accuracy'] = accuracy(
+                torch.cat(all_preds), torch.cat(all_labels)).item()
+            self.epoch_outputs['train_f1_score_macro'] = f1_score(
+                torch.cat(all_preds), torch.cat(all_labels)).item()
+
+            for cb in self.callbacks:
+                cb.on_epoch_end(self, epoch)
+
+            if self.should_stop:
+                break  # Early stopping
+
+            self.run_scheduler_step(monitor_value=val_score, epoch=epoch + 1)
+            
+    #-----------------
+    # TEMPLATE PREDICT
+    #-----------------        
+    
+    def _predict(self, dataloader, on_train_epoch_end=False):
+        self.net.eval()
+        
+        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
+        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
+        
+        all_labels, all_preds, all_logits = [], [], []
+        running_loss = 0.0
+        
+        desc = '[val]' if on_train_epoch_end else f'[{self.phase}]'
+        with torch.no_grad():
+            
+            for batch_x, batch_y in tqdm(dataloader, desc=desc, leave=not self.phase=='train'):
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                
+                loss, logits = self._predict_step(batch_x, batch_y.long())
+            
+                preds = torch.argmax(logits, dim=1)
+                running_loss += loss.item() * batch_y.shape[0]
+                
+                all_labels.append(batch_y)
+                all_preds.append(preds)
+                all_logits.append(logits)
+                
+        labels = torch.cat(all_labels)
+        preds = torch.cat(all_preds)
+        logits = torch.cat(all_logits)
+        
+        eval_loss = running_loss / labels.shape[0] if labels.shape[0] > 0 else 0.0
+        
+        return {
+            'accuracy' : accuracy(preds, labels).item(),
+            'f1_score_macro' : f1_score(preds, labels).item(),
+            'loss' : eval_loss,
+            'labels': labels.detach().cpu().numpy(),
+            'preds': preds.detach().cpu().numpy(),
+            'logits': logits.detach().cpu().numpy(),
+        }
+            
+    #------------------------
     # SCHEDULER AND OPTIMIZER
-    ####
+    #------------------------
     
     def configure_optimizers(self, params=None):
         cf = load_config()

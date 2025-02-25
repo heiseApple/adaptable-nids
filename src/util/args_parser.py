@@ -6,6 +6,7 @@ from approach import (
     XGB,
     KNN,
     Baseline,
+    RFS,
     get_approach_type
 )
 
@@ -19,6 +20,7 @@ def parse_arguments():
     parser = XGB.add_appr_specific_args(parser)
     parser = KNN.add_appr_specific_args(parser)
     parser = Baseline.add_appr_specific_args(parser)
+    parser = RFS.add_appr_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--gpu', action='store_true', default=cf['gpu'], help='Use GPU if available')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')

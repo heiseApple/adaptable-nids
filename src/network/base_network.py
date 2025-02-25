@@ -13,11 +13,10 @@ class BaseNetwork(nn.Module, ABC):
         self.head = None
 
     @abstractmethod
-    def forward(self, x):
+    def forward(self, x, return_feat=False):
         """
         Forward pass of the network.
         """
-        # TODO: if return_feat is True, return the features extracted from the backbone
         pass
     
     @abstractmethod
@@ -27,12 +26,11 @@ class BaseNetwork(nn.Module, ABC):
         """
         pass
 
-    @abstractmethod
-    def set_head(self, num_classes, out_features_size=None):
+    def set_head(self, head: nn.Module):
         """
         Configures or replaces the classification head of the model.
         """
-        pass
+        self.head = head
 
     def freeze_backbone(self):
         """
@@ -63,19 +61,27 @@ class BaseNetwork(nn.Module, ABC):
         torch.save(self.state_dict(), weights_path)
         return weights_path
 
-    def load_weights(self, path=None):
+    def load_weights(self, path):
         """
         Loads the model weights from a specified file path.
         """
+        if path is None:
+            raise ValueError('The path to the weights file must be specified.')
         self.load_state_dict(torch.load(path))
         # for name, param in self.named_parameters():
         #     print(name, param.device, torch.sum(param).item())
         
     def trainability_info(self):
-        print('\n[TrainabilityInfo]')
+        """
+        Prints the trainability status of each parameter in the network.
+        """
+        print('[Trainability Information]')
+        print('-'*80)
+        print(f"{'Layer (type/param)':<50} | {'Requires Grad'}")
+        print('-'*80)
         for name, param in self.named_parameters():
-            print(name, param.requires_grad)
-        print('')
+            print(f'{name:<50} | {param.requires_grad}')
+        print('-'*80)
         
     def summarize_module(self, print_fn=print):
         """

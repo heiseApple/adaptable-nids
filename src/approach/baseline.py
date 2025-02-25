@@ -1,7 +1,4 @@
-import torch
 from torch import nn
-from tqdm import tqdm
-from torchmetrics import Accuracy, F1Score
 
 from approach.dl_module import DLModule
 from callback.freeze_backbone import FreezeBackbone
@@ -11,10 +8,7 @@ from util.config import load_config
 class Baseline(DLModule):
     """
     Baseline class for a deep learning module that includes training, validation, 
-    and adaptation strategies.
-    Attributes:
-        criterion (nn.Module): Loss function used for training.
-        adaptation_strat (str): Strategy for model adaptation, either 'finetuning' or 'freezing'.
+    and adaptation strategies (finetuning or freezing).
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -34,108 +28,17 @@ class Baseline(DLModule):
         return parser
     
     
-    def _fit(self, train_dataloader, val_dataloader):
-        
-        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
-        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
-
-        for epoch in range(self.max_epochs):
-            self.net.train()
-
-            for cb in self.callbacks:
-                cb.on_epoch_start(self, epoch)
-
-            running_loss = 0.0
-            all_labels, all_preds = [], []
-
-            postfix = {
-                'trn loss': f'{self.epoch_outputs["train_loss"]:.4f}', 
-                'trn acc':  f'{self.epoch_outputs["train_accuracy"]:.4f}',
-                'trn f1':   f'{self.epoch_outputs["train_f1_score_macro"]:.4f}',
-                f'val {self.sch_monitor}': f'{val_score:.4f}'
-            } if epoch > 0 else {}
-            train_loop = tqdm(
-                train_dataloader, desc=f'Ep[{epoch+1}/{self.max_epochs}]',  
-                postfix=postfix, leave=False
-            )
-            for batch_x, batch_y in train_loop:
-                # Move data on self.device
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-            
-                # Forward pass and Loss
-                logits = self.net(batch_x)
-                loss = self.criterion(logits, batch_y.long())
-
-                # Backward pass
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-                running_loss += loss.item()
-
-                # Metrics
-                preds = torch.argmax(logits, dim=1)
-                all_labels.append(batch_y)
-                all_preds.append(preds)
-                
-            # Validation on fit epoch end
-            self.epoch_outputs = self._predict(val_dataloader, on_train_epoch_end=True)
-            val_score = self.epoch_outputs[self.sch_monitor]
-            
-            self.epoch_outputs['train_loss'] = running_loss / len(train_dataloader)
-            self.epoch_outputs['train_accuracy'] = accuracy(
-                torch.cat(all_preds), torch.cat(all_labels)).item()
-            self.epoch_outputs['train_f1_score_macro'] = f1_score(
-                torch.cat(all_preds), torch.cat(all_labels)).item()
-
-            for cb in self.callbacks:
-                cb.on_epoch_end(self, epoch)
-
-            if self.should_stop:
-                break  # Early stopping
-
-            self.run_scheduler_step(monitor_value=val_score, epoch=epoch + 1)
+    def _fit_step(self, batch_x, batch_y):
+        logits = self.net(batch_x)
+        loss = self.criterion(logits, batch_y)
+        return loss, logits
                 
             
-    def _predict(self, dataloader, on_train_epoch_end=False):
-        self.net.eval()
-        
-        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
-        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
-        
-        all_labels, all_preds, all_logits = [], [], []
-        running_loss = 0.0
-        
-        desc = '[val]' if on_train_epoch_end else f'[{self.phase}]'
-        with torch.no_grad():
-            
-            for batch_x, batch_y in tqdm(dataloader, desc=desc, leave=not self.phase=='train'):
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                
-                logits = self.net(batch_x)
-                preds = torch.argmax(logits, dim=1)
-                
-                loss = self.criterion(logits, batch_y.long())
-                running_loss += loss.item() * batch_y.shape[0]
-                
-                all_labels.append(batch_y)
-                all_preds.append(preds)
-                all_logits.append(logits)
-                
-        labels = torch.cat(all_labels)
-        preds = torch.cat(all_preds)
-        logits = torch.cat(all_logits)
-        
-        eval_loss = running_loss / labels.shape[0] if labels.shape[0] > 0 else 0.0
-        
-        return {
-            'accuracy' : accuracy(preds, labels).item(),
-            'f1_score_macro' : f1_score(preds, labels).item(),
-            'loss' : eval_loss,
-            'labels': labels.detach().cpu().numpy(),
-            'preds': preds.detach().cpu().numpy(),
-            'logits': logits.detach().cpu().numpy(),
-        }
-        
+    def _predict_step(self, batch_x, batch_y):
+        logits = self.net(batch_x)
+        loss = self.criterion(logits, batch_y)
+        return loss, logits
+    
         
     def _adapt(self, train_dataloader, val_dataloader):
         self._fit(train_dataloader, val_dataloader)

@@ -1,5 +1,5 @@
 import yaml
-import os
+from pathlib import Path
 
 def load_config(config_path="../config.yaml"):
     """
@@ -11,9 +11,10 @@ def load_config(config_path="../config.yaml"):
     Returns:
         dict: A dictionary containing configuration parameters.
     """
-    if not os.path.exists(config_path):
+    config_path = Path(config_path)
+    if not config_path.exists():
         raise FileNotFoundError(f'Configuration file not found: {config_path}')
     
-    with open(config_path, 'r') as file:
+    with config_path.open('r') as file:
         config = yaml.safe_load(file)
     return config

@@ -62,7 +62,14 @@ net_scale: 1
 num_classes: 0
 
 # DL BASELINE
-adaptation_strat: ''
+adaptation_strat: '' 
+
+# RFS
+alpha: 0.5
+gamma: 0.5
+is_distill:
+kd_t: 1
+tacher_path:
 
 # RANDOM FOREST
 rf_criterion: 'gini'

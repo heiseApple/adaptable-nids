@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from module.head import FullyConnected
 from network.base_network import BaseNetwork
 from util.config import load_config
 
@@ -61,13 +62,16 @@ class Lopez17CNN(BaseNetwork):
 
             'fc1': nn.Linear(features_size0 * features_size1 * filters[1], out_features_size),
         })
-        # Head
-        self.set_head(num_classes, out_features_size)
+        # Init the network with a FullyConnected head
+        self.set_head(FullyConnected(in_features=out_features_size, num_classes=num_classes))
 
 
-    def forward(self, x):
-        out = F.relu(self.extract_features(x))
+    def forward(self, x, return_feat=False):
+        embeddings = self.extract_features(x)
+        out = F.relu(embeddings) # Activate the embeddings
         out = self.head(out)
+        if return_feat:
+            return out, embeddings
         return out
 
     def extract_features(self, x):
@@ -86,6 +90,3 @@ class Lopez17CNN(BaseNetwork):
         out = torch.flatten(out, start_dim=1)
         out = self.backbone['fc1'](out)
         return out
-    
-    def set_head(self, num_classes, out_features_size):
-        self.head = nn.Linear(out_features_size, num_classes)
