@@ -71,7 +71,6 @@ class DLModule:
     #------------------------------------
     
     def fit(self):
-        print('='*100)
         self.phase = 'train'
 
         for cb in self.callbacks: 
@@ -85,7 +84,6 @@ class DLModule:
             cb.on_fit_end(self)
         
     def test(self):
-        print('='*100)
         self.phase = 'test'
         
         for cb in self.callbacks:
@@ -110,7 +108,6 @@ class DLModule:
             cb.on_validation_end(self)  
             
     def adapt(self):
-        print('='*100)
         self.phase = 'train'
 
         for cb in self.callbacks: 

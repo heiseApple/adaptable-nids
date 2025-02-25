@@ -29,6 +29,8 @@ class Trainer:
         
         self._save_dict_args()
         
+        dm = DirectoryManager()
+        
         # Init approach
         approach = get_approach(approach_name=self.args.approach, **self.dict_args)
         
@@ -53,9 +55,13 @@ class Trainer:
                 test=src_splits['test']
             )
             self._fit_evaluate(approach)
+            
             # Test on both
+            print(f'[Trainer] Starting test on source dataset: {self.args.src_dataset}')
             self._test(approach) # On src
-            self._test(approach, trg_test_dataset=trg_splits['test']) # On trg
+            dm.toggle_log_dir() # Switch the log_dir from src to trg 
+            print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
+            self._test(approach, test_dataset=trg_splits['test']) # On trg
             
         else:
             # n_task == 2 -> sequential training
@@ -63,41 +69,46 @@ class Trainer:
                 raise ValueError('ML approaches do not support multiple tasks')
             
             if not self.args.skip_t1:
-                # Train, val, and test on src
-                print(f'[Trainer] Starting task on source dataset: {self.args.src_dataset}')
+                # Train and val on src
+                print(f'[Trainer] Starting training on source dataset: {self.args.src_dataset}')
                 approach.datamodule = self.data_manager.get_datamodule(**src_splits)
                 self._fit_evaluate(approach)
-                self._test(approach)
             
+            dm.toggle_log_dir() # Switch the log_dir from src to trg 
             approach = self._reset_approach(weights_path=self.args.weights_path)
             
-            # Train, val, and test on trg
-            print(f'[Trainer] Starting task on target dataset: {self.args.trg_dataset}')
+            # Train and val on trg
+            print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
             approach.datamodule = self.data_manager.get_datamodule(**trg_splits)
             self._adapt_evaluate(approach)
-            self._test(approach)
+            
+            # Test on both
+            print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
+            self._test(approach) # On trg
+            dm.toggle_log_dir() # Switch the log_dir from trg to src 
+            print(f'[Trainer] Starting test on source dataset: {self.args.src_dataset}')
+            self._test(approach, test_dataset=src_splits['test']) # Test on src post adaptation
             
     
     def _fit_evaluate(self, approach):
+        print('='*100)
         approach.fit()
         approach.validate()
         
     def _adapt_evaluate(self, approach):
+        print('='*100)
         approach.adapt()
         approach.validate()
         
-    def _test(self, approach, trg_test_dataset=None):
-        if trg_test_dataset is not None:
-            print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
-            DirectoryManager().update_log_dir() # Switch the log_dir from src to trg 
-            approach.datamodule.set_test_dataset(trg_test_dataset)
-            
+    def _test(self, approach, test_dataset=None):
+        print('='*100)
+        if test_dataset is not None:
+            approach.datamodule.set_test_dataset(test_dataset)     
         approach.test()
-            
-            
+     
     def _reset_approach(self, weights_path=None):
-        dm = DirectoryManager() 
-        dm.update_log_dir() # Switch the log_dir from src to trg 
+        dm = DirectoryManager()
+        
         approach = get_approach(
             approach_name=self.args.approach, 
             fs_task=self.args.k is not None, 

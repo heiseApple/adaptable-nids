@@ -35,12 +35,17 @@ class DirectoryManager:
         self._ensure_directory(full_path)
         return full_path
     
-    def update_log_dir(self):
+    def toggle_log_dir(self):
         """
-        Update self.log_dir by replacing 'src' with 'trg' in the directory path.
+        Updates the log directory path by toggling between 'src' and 'trg' directories.
         """
         if 'src' in self.log_dir.parts:
-            self.log_dir = Path(str(self.log_dir).replace('src', 'trg'))
-            self._ensure_directory(self.log_dir)
+            new_dir = 'trg'
+        elif 'trg' in self.log_dir.parts:
+            new_dir = 'src'
         else:
-            raise ValueError("The current log_dir does not contain 'src' and cannot be updated to 'trg'.")
+            raise ValueError("The current log_dir does not contain 'src' or 'trg' and cannot be updated.")
+        
+        self.log_dir = self.log_dir.parent / new_dir
+        self._ensure_directory(self.log_dir)
+        

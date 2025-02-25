@@ -15,7 +15,6 @@ class SaveTrainLog(Callback):
         """
         self.filename = filename
         self.write_interval = write_interval
-        self.fullpath = Path(DirectoryManager().log_dir) / f'{self.filename}.parquet'
         # Store rows in memory before writing
         self.metrics_buffer = []
 
@@ -48,11 +47,12 @@ class SaveTrainLog(Callback):
             self._flush_to_disk()
     
     def _flush_to_disk(self):
+        fullpath = Path(DirectoryManager().log_dir) / f'{self.filename}.parquet'
         df_new_data = pd.DataFrame(self.metrics_buffer)
-        if self.fullpath.exists():
-            existing_df = pd.read_parquet(self.fullpath)
+        if fullpath.exists():
+            existing_df = pd.read_parquet(fullpath)
             combined = pd.concat([existing_df, df_new_data], ignore_index=True)
-            combined.to_parquet(self.fullpath, index=False, compression='snappy')
+            combined.to_parquet(fullpath, index=False, compression='snappy')
         else:
-            df_new_data.to_parquet(self.fullpath, index=False, compression='snappy')
+            df_new_data.to_parquet(fullpath, index=False, compression='snappy')
         self.metrics_buffer = []

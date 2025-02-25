@@ -27,7 +27,6 @@ class SaveOutputs(Callback):
             if key in module.outputs:
                 metrics_to_save[key] = module.outputs[key]
         
-        # Salviamo le metriche in un json
         with open(f'{dm.log_dir}/{module.phase}_results.json', 'w') as f:
             json.dump(metrics_to_save, f, indent=4)
 
