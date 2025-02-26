@@ -44,14 +44,15 @@ class Trainer:
         
         if self.args.n_tasks == 1:
             # n_task == 1 -> monolithic training
-            # Combine src_dataset and trg_dataset train splits
+            # Combine src_dataset and trg_dataset train/val splits
             combined_train = self.data_manager.concat_dataset(
-                src_splits['train'], trg_splits['train']
-            )
+                src_splits['train'], trg_splits['train'])
+            combined_val = self.data_manager.concat_dataset(
+                    src_splits['val'], trg_splits['val'])
             # Val on src
             approach.datamodule = self.data_manager.get_datamodule(
                 train=combined_train,
-                val=src_splits['val'],
+                val=combined_val,
                 test=src_splits['test']
             )
             self._fit_evaluate(approach)

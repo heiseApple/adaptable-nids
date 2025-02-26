@@ -14,6 +14,9 @@ DICT_ARGS_KEYS = [
     'num_pkts',
     'fields',
     'appr_type',
+    'k',
+    'adaptation_strat',
+    'network',
 ]
 
 # Metrics of interest for each report
@@ -115,7 +118,7 @@ def main():
 
     df_results = parse_experiments(root_dir)
 
-    print('\n', df_results.head(3))
+    print(f'\nOutput dataframe shape => {df_results.shape}\n', df_results.head(3))
 
     if args.csv_output:
         df_results.to_csv(args.csv_output, index=False)
