@@ -37,10 +37,10 @@ class KNN(MLModule):
     def add_appr_specific_args(parent_parser):
         cf = load_config()
         parser = MLModule.add_appr_specific_args(parent_parser)
-        parser.add_argument('--n-neighbors', type=int, default=cf['knn_n_neighbors'])
-        parser.add_argument('--weights', type=str, default=cf['knn_weights'])
-        parser.add_argument('--p', type=int, default=cf['knn_p'])
-        parser.add_argument('--metric', type=str, default=cf['knn_metric'])
+        parser.add_argument('--knn-n-neighbors', type=int, default=cf['knn_n_neighbors'])
+        parser.add_argument('--knn-weights', type=str, default=cf['knn_weights'])
+        parser.add_argument('--knn-p', type=int, default=cf['knn_p'])
+        parser.add_argument('--knn-metric', type=str, default=cf['knn_metric'])
         return parser
     
     def _fit(self, data, labels):
