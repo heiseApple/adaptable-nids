@@ -81,9 +81,10 @@ class RFS(DLModule):
         
         embeddings, labels = [], []
         
-        for batch_x, batch_y in tqdm(
+        adapt_loop = tqdm(
             train_dataloader, desc='[fitting NN head]', leave=True, disable=disable_tqdm
-        ):
+        )
+        for batch_x, batch_y in adapt_loop:
             batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
             
             # Embed the input

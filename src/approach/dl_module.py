@@ -203,9 +203,10 @@ class DLModule:
         desc = '[val]' if on_train_epoch_end else f'[{self.phase}]'
         with torch.no_grad():
             
-            for batch_x, batch_y in tqdm(
+            predict_loop = tqdm(
                 dataloader, desc=desc, leave=not self.phase=='train', disable=disable_tqdm
-            ):
+            )
+            for batch_x, batch_y in predict_loop:
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
                 
                 loss, logits = self._predict_step(batch_x, batch_y.long())
