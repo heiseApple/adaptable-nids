@@ -2,6 +2,7 @@ import json
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from filelock import FileLock
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 
 from data.dataset_config import dataset_config
@@ -30,19 +31,22 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     p = Path(full_path)
     prep_df_path = p.parent / f'{p.stem}_{label_column.lower()}_prep{seed}{p.suffix}'
     
-    if not prep_df_path.exists():
-        # First time reading the dataset 
-        print(f'Processing {dataset} dataframe...')
-        
-        cf = load_config()
-        
-        df = pd.read_parquet(full_path)
-        df = _preprocess_dataframe(df, label_column, p.parent, cf)
-        df.to_parquet(prep_df_path)
-    else:
-        # Already pre-processed
-        print(f'WARNING: using pre-processed dataframe for {dataset}.')
-        df = pd.read_parquet(prep_df_path)
+    # Lock
+    lock = FileLock(str(prep_df_path) + '.lock', timeout=None)
+    with lock:
+        if not prep_df_path.exists():
+            # First time reading the dataset 
+            print(f'Processing {dataset} dataframe...')
+            
+            cf = load_config()
+            
+            df = pd.read_parquet(full_path)
+            df = _preprocess_dataframe(df, label_column, p.parent, cf)
+            df.to_parquet(prep_df_path)
+        else:
+            # Already pre-processed
+            print(f'WARNING: using pre-processed dataframe for {dataset}.')
+            df = pd.read_parquet(prep_df_path)
             
     # Compute PSQ input N_p x F
     data_series = df[[f'SCALED_{f}' for f in fields]].apply(
