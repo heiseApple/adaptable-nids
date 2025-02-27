@@ -16,7 +16,10 @@ class Baseline(DLModule):
         
         self.criterion = nn.CrossEntropyLoss()
         self.adaptation_strat = kwargs.get('adaptation_strat', cf['adaptation_strat'])
-        self.callbacks.append(FreezeBackbone())
+        self.adapt_lr = kwargs.get('adapt_lr', cf['adapt_lr'])
+        self.adapt_epochs = kwargs.get('adapt_epochs', cf['adapt_epochs'])
+        if self.adaptation_strat == 'freezing':
+            self.callbacks.append(FreezeBackbone())
         
         
     @staticmethod
@@ -25,6 +28,8 @@ class Baseline(DLModule):
         parser = DLModule.add_appr_specific_args(parent_parser)
         parser.add_argument('--adaptation-strat', type=str, default=cf['adaptation_strat'], 
                             choices=['finetuning', 'freezing'])
+        parser.add_argument('--adapt-lr', type=float, default=cf['adapt_lr'])
+        parser.add_argument('--adapt-epochs', type=int, default=cf['adapt_epochs'])
         return parser
     
     
@@ -40,5 +45,12 @@ class Baseline(DLModule):
         return loss, logits
     
         
-    def _adapt(self, train_dataloader, val_dataloader):
-        self._fit(train_dataloader, val_dataloader)
+    def _adapt(self, adapt_dataloader, val_dataloader):
+        # Update hyperparameters for adaptation
+        self.max_epochs = self.adapt_epochs
+        self.lr = self.adapt_lr
+        # Setup the the optimizer, if adaptation_strat is finetuning params = self.net.parameters()
+        params = self.net.head.parameters() if self.adaptation_strat == 'freezing' else None
+        self.configure_optimizers(params=params)
+
+        self._fit(adapt_dataloader, val_dataloader)

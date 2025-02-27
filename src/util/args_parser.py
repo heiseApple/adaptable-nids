@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 
+from data.data_module import DataModule
 from util.config import load_config
 from approach import (
     RandomForest,
@@ -21,6 +22,7 @@ def parse_arguments():
     parser = KNN.add_appr_specific_args(parser)
     parser = Baseline.add_appr_specific_args(parser)
     parser = RFS.add_appr_specific_args(parser)
+    parser = DataModule.add_argparse_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--k-seed', type=int, default=cf['seed'], 
                         help='Seed used to sample the k samples in the few-shot case.')
@@ -37,9 +39,9 @@ def parse_arguments():
                         help='Skip the first task on src dataset, used only when n_task 2')
     parser.add_argument('--k', type=int, default=cf['k'], help='Number of shots for the target dataset')
     # Data args
-    parser.add_argument('--src-dataset', type=str, default=cf['src-dataset'], 
+    parser.add_argument('--src-dataset', type=str, default=cf['src_dataset'], 
                         help='Source dataset to use')
-    parser.add_argument('--trg-dataset', type=str, default=cf['trg-dataset'], 
+    parser.add_argument('--trg-dataset', type=str, default=cf['trg_dataset'], 
                         help='Target dataset to use')
     parser.add_argument('--is-flat', action='store_true', default=cf['is_flat'],
                         help='Flat the PSQ input')

@@ -116,9 +116,9 @@ class DLModule:
             cb.on_adaptation_start(self)
             
         # Adaptation (on trg dataset) dataloder set by the trainer
-        train_dataloader = self.datamodule.get_train_data() 
+        adapt_dataloader = self.datamodule.get_adapt_data() 
         val_dataloader = self.datamodule.get_val_data()
-        self._adapt(train_dataloader, val_dataloader)
+        self._adapt(adapt_dataloader, val_dataloader)
 
         for cb in self.callbacks:
             cb.on_adaptation_end(self) 
@@ -128,7 +128,6 @@ class DLModule:
     #-------------
     
     def _fit(self, train_dataloader, val_dataloader):
-        
         accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
         f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
         
@@ -259,9 +258,10 @@ class DLModule:
                 T_mult=cf['cawr_t_mult'],
                 eta_min=float(cf['cawr_eta_min'])
             )
-            
         else:
             raise ValueError('Scheduler not implemented')
+        
+        print(f'[Optimizer] Adam with {self.lr} and {self.lr_strat} lr scheduler')   
             
     
     def run_scheduler_step(self, monitor_value, epoch=None):

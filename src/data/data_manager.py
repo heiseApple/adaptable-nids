@@ -60,7 +60,7 @@ class DataManager:
             train_dataset=train,
             val_dataset=val,
             test_dataset=test,
-            appr_type=self.appr_type
+            **vars(self.args)
         )
 
     def concat_dataset(self, d1, d2):

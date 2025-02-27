@@ -40,7 +40,6 @@ class RFS(DLModule):
             teacher_path=self.teacher_path
         )
         # RFS freezes the backbone during the adaptation phase
-        self.adaptation_strat = 'freezing'
         self.callbacks.append(FreezeBackbone())
         
         
@@ -76,13 +75,13 @@ class RFS(DLModule):
         
         
     @torch.no_grad()
-    def _adapt(self, train_dataloader, _):
+    def _adapt(self, adapt_dataloader, _):
         self.net.eval()
         
         embeddings, labels = [], []
         
         adapt_loop = tqdm(
-            train_dataloader, desc='[fitting NN head]', leave=True, disable=disable_tqdm
+            adapt_dataloader, desc='[fitting NN head]', leave=True, disable=disable_tqdm
         )
         for batch_x, batch_y in adapt_loop:
             batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
