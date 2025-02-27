@@ -1,3 +1,4 @@
+import sys
 import torch
 import importlib
 from tqdm import tqdm
@@ -8,6 +9,7 @@ from torchmetrics import Accuracy, F1Score
 from util.config import load_config
 from network.network_factory import build_network
 
+disable_tqdm = not sys.stdout.isatty()
 dl_approaches = {
     'baseline' : 'Baseline',
     'rfs' : 'RFS',
@@ -147,7 +149,7 @@ class DLModule:
             } if epoch > 0 else {}
             train_loop = tqdm(
                 train_dataloader, desc=f'Ep[{epoch+1}/{self.max_epochs}]',  
-                postfix=postfix, leave=False
+                postfix=postfix, leave=False, disable=disable_tqdm
             )
             for batch_x, batch_y in train_loop:
                 # Move data on self.device
@@ -201,7 +203,9 @@ class DLModule:
         desc = '[val]' if on_train_epoch_end else f'[{self.phase}]'
         with torch.no_grad():
             
-            for batch_x, batch_y in tqdm(dataloader, desc=desc, leave=not self.phase=='train'):
+            for batch_x, batch_y in tqdm(
+                dataloader, desc=desc, leave=not self.phase=='train', disable=disable_tqdm
+            ):
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
                 
                 loss, logits = self._predict_step(batch_x, batch_y.long())

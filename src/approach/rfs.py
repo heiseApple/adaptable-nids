@@ -1,3 +1,4 @@
+import sys
 import torch
 from torch import nn
 from tqdm import tqdm
@@ -9,6 +10,8 @@ from module.loss import DistillKLLoss
 from module.teacher import RFSTeacher
 from util.config import load_config
 
+disable_tqdm = not sys.stdout.isatty()
+
 
 class RFS(DLModule):
     """
@@ -19,7 +22,6 @@ class RFS(DLModule):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         cf = load_config()
-        
         
         self.kd_T = kwargs.get('kd_t', cf['kd_t'])
         self.is_distill = kwargs.get('is_distill', cf['is_distill'])
@@ -79,7 +81,9 @@ class RFS(DLModule):
         
         embeddings, labels = [], []
         
-        for batch_x, batch_y in tqdm(train_dataloader, desc='[fitting NN head]', leave=True):
+        for batch_x, batch_y in tqdm(
+            train_dataloader, desc='[fitting NN head]', leave=True, disable=disable_tqdm
+        ):
             batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
             
             # Embed the input
