@@ -2,8 +2,8 @@
 
 # DATA, DATASET
 base_data_path: "../../data"
-src-dataset:
-trg-dataset:
+src_dataset:
+trg_dataset:
 
 # INPUT
 num_pkts: 20
@@ -29,6 +29,9 @@ k:
 lr: 0.0001
 max_epochs: 100
 min_epochs: 1
+adaptation_strat: '' 
+adapt_lr: 0.0001
+adapt_epochs: 100
 
 # LR SCHEDULER
 lr_strat: 'none'
@@ -52,6 +55,7 @@ mc_mode: 'min'
 
 # DATALOADER
 batch_size: 64
+adapt_batch_size: 64
 num_workers: 0
 pin_memory: True
 
@@ -60,9 +64,6 @@ network: 'lopez17cnn'
 weights_path:
 net_scale: 1
 num_classes: 0
-
-# DL BASELINE
-adaptation_strat: '' 
 
 # RFS
 alpha: 0.5
