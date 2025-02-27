@@ -1,18 +1,22 @@
 #!/bin/bash
 # run_experiments.sh
 # This script runs experiments in a combinatorial fashion.
-# It accepts:
-#   --src-dataset (-sd) : a comma-separated list of source datasets
-#   --trg-dataset (-td) : a comma-separated list of target datasets
-#   --seed (-s)         : a comma-separated list of seeds or an interval (e.g., 0-100)
-#   --approach (-a)     : a comma-separated list of approaches
-#   --is-flat (-f)      : a flag indicating flat structure (if present, add to command)
-#   --cpu (-c)          : an integer for the number of cores to use
+# It accepts the following parameters:
+#   --src-dataset (-sd) : comma-separated list of source datasets
+#   --trg-dataset (-td) : comma-separated list of target datasets
+#   --seed (-s)         : comma-separated list of seeds or an interval (e.g., 0-100)
+#   --k-seed (-ks)      : comma-separated list of k-seeds or an interval (e.g., 0-100) [optional]
+#   --approach (-a)     : comma-separated list of approaches
+#   --is-flat (-f)      : flag indicating flat structure (if present, add to command)
+#   --cpu (-c)          : integer number of cores to use
 #   --extra-args (-e)   : extra arguments to pass directly to "python main.py"
 #   --log-keyword (-lk) : additional string for log_dir
 
 usage() {
-    echo "Usage: $0 --src-dataset <sd1,sd2,...> --trg-dataset <td1,td2,...> --seed <s1,s2,... or X-Y> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--log-keyword <keyword>] [--extra-args \"<args>\"]"
+    echo "Usage: $0 --src-dataset <sd1,sd2,...> --trg-dataset <td1,td2,...>"
+    echo "           --seed <s1,s2,... or X-Y> [--k-seed <ks1,ks2,... or X-Y>]"
+    echo "           --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores>"
+    echo "           [--log-keyword <keyword>] [--extra-args \"<args>\"]"
     exit 1
 }
 
@@ -20,6 +24,7 @@ usage() {
 SRC_DATASETS=""
 TRG_DATASETS=""
 SEEDS=""
+K_SEEDS=""
 APPROACHES=""
 IS_FLAT=0
 CPU_CORES=""
@@ -39,6 +44,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -s|--seed)
             SEEDS="$2"
+            shift
+            ;;
+        -ks|--k-seed)
+            K_SEEDS="$2"
             shift
             ;;
         -a|--approach)
@@ -68,7 +77,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Verify required arguments
+# Verify required parameters
 if [[ -z "$SRC_DATASETS" || -z "$TRG_DATASETS" || -z "$SEEDS" || -z "$APPROACHES" || -z "$CPU_CORES" ]]; then
     usage
 fi
@@ -85,8 +94,8 @@ IFS=',' read -ra SRC_DATASET_ARR <<< "$SRC_DATASETS"
 IFS=',' read -ra TRG_DATASET_ARR <<< "$TRG_DATASETS"
 IFS=',' read -ra APPROACH_ARR <<< "$APPROACHES"
 
-# Handle the --seed parameter:
-# If it matches the pattern X-Y, expand the range. Otherwise, split by commas.
+# Process the --seed parameter:
+# If it matches the pattern X-Y, expand the range; otherwise, split by commas.
 SEED_ARR=()
 if [[ "$SEEDS" =~ ^[0-9]+-[0-9]+$ ]]; then
     IFS='-' read -r start end <<< "$SEEDS"
@@ -97,37 +106,73 @@ else
     IFS=',' read -ra SEED_ARR <<< "$SEEDS"
 fi
 
-# Create an array to store commands
+# Process the --k-seed parameter (optional)
+if [[ -n "$K_SEEDS" ]]; then
+    K_SEED_ARR=()
+    if [[ "$K_SEEDS" =~ ^[0-9]+-[0-9]+$ ]]; then
+        IFS='-' read -r kstart kend <<< "$K_SEEDS"
+        for ((k=kstart; k<=kend; k++)); do
+            K_SEED_ARR+=("$k")
+        done
+    else
+        IFS=',' read -ra K_SEED_ARR <<< "$K_SEEDS"
+    fi
+fi
+
+# Array to store commands
 commands=()
 
 # Create experiments for each combination
 for src_dataset in "${SRC_DATASET_ARR[@]}"; do
     for trg_dataset in "${TRG_DATASET_ARR[@]}"; do
-        # Skip iteration if src_dataset == trg_dataset
+        # Skip iteration if src_dataset equals trg_dataset
         if [[ "$src_dataset" == "$trg_dataset" ]]; then
             continue
         fi
         for approach in "${APPROACH_ARR[@]}"; do
             for seed in "${SEED_ARR[@]}"; do
-                # Compose log_dir (e.g. ../results_sd_<src>_td_<trg>_<approach>_6f_20p)
-                if [[ -n "$LOG_KEYWORD" ]]; then
-                    LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_${LOG_KEYWORD}_6f_20p"
+                # If --k-seed is provided, run an additional loop
+                if [[ -n "$K_SEEDS" ]]; then
+                    for kseed in "${K_SEED_ARR[@]}"; do
+                        # Compose log_dir including k-seed
+                        if [[ -n "$LOG_KEYWORD" ]]; then
+                            LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_${LOG_KEYWORD}_6f_20p"
+                        else
+                            LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_6f_20p"
+                        fi
+                        mkdir -p "${LOG_DIR}"
+                        
+                        # Build the command including both seed and k-seed
+                        CMD="python main.py --src-dataset ${src_dataset} --trg-dataset ${trg_dataset} --approach ${approach} --seed ${seed} --k-seed ${kseed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
+                        
+                        # Prepend a header with a separator and the exact command being executed
+                        FULL_CMD="{ echo \"$(printf '=%.0s' {1..100})\" ; \
+                            echo \"Command: ${CMD}\" ; \
+                            echo \"$(printf '=%.0s' {1..100})\" >&2 ; \
+                            echo \"Command: ${CMD}\" >&2 ; \
+                            ${CMD} ; \
+                        } > \"${LOG_DIR}/output.log\" 2>> \"${LOG_DIR}/errors.log\""
+                        commands+=("$FULL_CMD")
+                    done
                 else
-                    LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_6f_20p"
+                    # If k-seed is not provided, use only seed
+                    if [[ -n "$LOG_KEYWORD" ]]; then
+                        LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_${LOG_KEYWORD}_6f_20p"
+                    else
+                        LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_6f_20p"
+                    fi
+                    mkdir -p "${LOG_DIR}"
+                    
+                    CMD="python main.py --src-dataset ${src_dataset} --trg-dataset ${trg_dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
+                    
+                    FULL_CMD="{ echo \"$(printf '=%.0s' {1..100})\" ; \
+                        echo \"Command: ${CMD}\" ; \
+                        echo \"$(printf '=%.0s' {1..100})\" >&2 ; \
+                        echo \"Command: ${CMD}\" >&2 ; \
+                        ${CMD} ; \
+                    } > \"${LOG_DIR}/output.log\" 2>> \"${LOG_DIR}/errors.log\""
+                    commands+=("$FULL_CMD")
                 fi
-                mkdir -p "${LOG_DIR}"
-
-                # Build the command for execution
-                CMD="python main.py --src-dataset ${src_dataset} --trg-dataset ${trg_dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
-
-                # Prepend a header with a separator and the exact command being executed
-                FULL_CMD="{ echo \"$(printf '=%.0s' {1..100})\" ; \
-                    echo \"Command: ${CMD}\" ; \
-                    echo \"$(printf '=%.0s' {1..100})\" >&2 ; \
-                    echo \"Command: ${CMD}\" >&2 ; \
-                    ${CMD} ; \
-                } > \"${LOG_DIR}/output.log\" 2>> \"${LOG_DIR}/errors.log\""
-                commands+=("$FULL_CMD")
             done
         done
     done
@@ -145,4 +190,3 @@ else
 fi
 
 echo "All experiments completed."
-

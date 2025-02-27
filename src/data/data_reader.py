@@ -32,7 +32,7 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     prep_df_path = p.parent / f'{p.stem}_{label_column.lower()}_prep{seed}{p.suffix}'
     
     # Lock
-    lock = FileLock(str(prep_df_path) + '.lock', timeout=None)
+    lock = FileLock(str(prep_df_path) + '.lock', timeout=-1)
     with lock:
         if not prep_df_path.exists():
             # First time reading the dataset 

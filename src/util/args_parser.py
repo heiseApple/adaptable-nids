@@ -22,6 +22,8 @@ def parse_arguments():
     parser = Baseline.add_appr_specific_args(parser)
     parser = RFS.add_appr_specific_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
+    parser.add_argument('--k-seed', type=int, default=cf['seed'], 
+                        help='Seed used to sample the k samples in the few-shot case.')
     parser.add_argument('--gpu', action='store_true', default=cf['gpu'], help='Use GPU if available')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
     parser.add_argument('--n-tasks', type=int, default=cf['n_task'], choices=[1, 2], 

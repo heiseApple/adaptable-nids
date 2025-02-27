@@ -95,7 +95,7 @@ class DataManager:
         
     def _sample_k_per_class(self, data, k):
         x, y = data
-        rng = np.random.default_rng(self.args.seed)
+        rng = np.random.default_rng(self.args.k_seed)
         
         # Retrieve unique classes and their counts
         classes, counts = np.unique(y, return_counts=True)

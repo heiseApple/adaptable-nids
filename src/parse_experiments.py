@@ -7,6 +7,7 @@ from tqdm import tqdm
 # List of keys to read from dict_args.json
 DICT_ARGS_KEYS = [
     'seed',
+    'k_seed'
     'approach',
     'src_dataset',
     'trg_dataset',
