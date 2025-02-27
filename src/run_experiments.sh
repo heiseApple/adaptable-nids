@@ -4,14 +4,15 @@
 # It accepts:
 #   --src-dataset (-sd) : a comma-separated list of source datasets
 #   --trg-dataset (-td) : a comma-separated list of target datasets
-#   --seed (-s)         : a comma-separated list of seeds
+#   --seed (-s)         : a comma-separated list of seeds or an interval (e.g., 0-100)
 #   --approach (-a)     : a comma-separated list of approaches
 #   --is-flat (-f)      : a flag indicating flat structure (if present, add to command)
 #   --cpu (-c)          : an integer for the number of cores to use
 #   --extra-args (-e)   : extra arguments to pass directly to "python main.py"
+#   --log-keyword (-lk) : additional string for log_dir
 
 usage() {
-    echo "Usage: $0 --src-dataset <sd1,sd2,...> --trg-dataset <td1,td2,...> --seed <s1,s2,...> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--extra-args \"<args>\"]"
+    echo "Usage: $0 --src-dataset <sd1,sd2,...> --trg-dataset <td1,td2,...> --seed <s1,s2,... or X-Y> --approach <appr1,appr2,...> [--is-flat] --cpu <num_cores> [--log-keyword <keyword>] [--extra-args \"<args>\"]"
     exit 1
 }
 
@@ -23,37 +24,51 @@ APPROACHES=""
 IS_FLAT=0
 CPU_CORES=""
 EXTRA_ARGS=""
+LOG_KEYWORD=""
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -sd|--src-dataset)
             SRC_DATASETS="$2"
-            shift ;;
+            shift
+            ;;
         -td|--trg-dataset)
             TRG_DATASETS="$2"
-            shift ;;
+            shift
+            ;;
         -s|--seed)
             SEEDS="$2"
-            shift ;;
+            shift
+            ;;
         -a|--approach)
             APPROACHES="$2"
-            shift ;;
+            shift
+            ;;
         -f|--is-flat)
-            IS_FLAT=1 ;;
+            IS_FLAT=1
+            ;;
         -c|--cpu)
             CPU_CORES="$2"
-            shift ;;
+            shift
+            ;;
         -e|--extra-args)
             EXTRA_ARGS="$2"
-            shift ;;
+            shift
+            ;;
+        -lk|--log-keyword)
+            LOG_KEYWORD="$2"
+            shift
+            ;;
         *)
             echo "Unknown parameter passed: $1"
-            usage ;;
+            usage
+            ;;
     esac
     shift
 done
 
+# Verify required arguments
 if [[ -z "$SRC_DATASETS" || -z "$TRG_DATASETS" || -z "$SEEDS" || -z "$APPROACHES" || -z "$CPU_CORES" ]]; then
     usage
 fi
@@ -68,8 +83,19 @@ fi
 # Split comma-separated lists into arrays
 IFS=',' read -ra SRC_DATASET_ARR <<< "$SRC_DATASETS"
 IFS=',' read -ra TRG_DATASET_ARR <<< "$TRG_DATASETS"
-IFS=',' read -ra SEED_ARR <<< "$SEEDS"
 IFS=',' read -ra APPROACH_ARR <<< "$APPROACHES"
+
+# Handle the --seed parameter:
+# If it matches the pattern X-Y, expand the range. Otherwise, split by commas.
+SEED_ARR=()
+if [[ "$SEEDS" =~ ^[0-9]+-[0-9]+$ ]]; then
+    IFS='-' read -r start end <<< "$SEEDS"
+    for ((i=start; i<=end; i++)); do
+        SEED_ARR+=("$i")
+    done
+else
+    IFS=',' read -ra SEED_ARR <<< "$SEEDS"
+fi
 
 # Create an array to store commands
 commands=()
@@ -83,13 +109,24 @@ for src_dataset in "${SRC_DATASET_ARR[@]}"; do
         fi
         for approach in "${APPROACH_ARR[@]}"; do
             for seed in "${SEED_ARR[@]}"; do
-                # Compose log_dir: e.g. ../results_{src_dataset}_{trg_dataset}_{approach}_6f_20p
-                LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_6f_20p"
+                # Compose log_dir (e.g. ../results_sd_<src>_td_<trg>_<approach>_6f_20p)
+                if [[ -n "$LOG_KEYWORD" ]]; then
+                    LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_${LOG_KEYWORD}_6f_20p"
+                else
+                    LOG_DIR="../results_sd_${src_dataset}_td_${trg_dataset}_${approach}_6f_20p"
+                fi
                 mkdir -p "${LOG_DIR}"
+
                 # Build the command for execution
                 CMD="python main.py --src-dataset ${src_dataset} --trg-dataset ${trg_dataset} --approach ${approach} --seed ${seed} --log-dir ${LOG_DIR}${FLAT_FLAG} ${EXTRA_ARGS}"
-                # Prepend a header with a separator and the exact command being executed.
-                FULL_CMD="( echo '$(printf '=%.0s' {1..100})'; echo 'Command: ${CMD}'; ${CMD} ) > ${LOG_DIR}/output.log 2>&1"
+
+                # Prepend a header with a separator and the exact command being executed
+                FULL_CMD="{ echo \"$(printf '=%.0s' {1..100})\" ; \
+                    echo \"Command: ${CMD}\" ; \
+                    echo \"$(printf '=%.0s' {1..100})\" >&2 ; \
+                    echo \"Command: ${CMD}\" >&2 ; \
+                    ${CMD} ; \
+                } > \"${LOG_DIR}/output.log\" 2>> \"${LOG_DIR}/errors.log\""
                 commands+=("$FULL_CMD")
             done
         done
@@ -108,3 +145,4 @@ else
 fi
 
 echo "All experiments completed."
+
