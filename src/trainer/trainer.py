@@ -60,7 +60,10 @@ class Trainer:
             # Test on both
             print(f'[Trainer] Starting test on source dataset: {self.args.src_dataset}')
             self._test(approach) # On src
+            
+            approach.task = 'trg'
             dm.toggle_log_dir() # Switch the log_dir from src to trg 
+            
             print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
             self._test(approach, test_dataset=trg_splits['test']) # On trg
             
@@ -77,6 +80,7 @@ class Trainer:
             
             dm.toggle_log_dir() # Switch the log_dir from src to trg 
             approach = self._reset_approach(weights_path=self.args.weights_path)
+            approach.task = 'trg'
             
             # Train and val on trg
             print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
@@ -86,7 +90,10 @@ class Trainer:
             # Test on both
             print(f'[Trainer] Starting test on target dataset: {self.args.trg_dataset}')
             self._test(approach) # On trg
+            
             dm.toggle_log_dir() # Switch the log_dir from trg to src 
+            approach.task = 'src'
+            
             print(f'[Trainer] Starting test on source dataset: {self.args.src_dataset}')
             self._test(approach, test_dataset=src_splits['test']) # Test on src post adaptation
             
