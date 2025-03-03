@@ -183,10 +183,18 @@ echo "Total experiments: $TOTAL"
 
 # Run experiments in parallel with progress reporting if GNU parallel is available.
 if command -v parallel > /dev/null 2>&1; then
-    printf "%s\n" "${commands[@]}" | parallel --progress --joblog ../log_dump/joblog.txt -j "$CPU_CORES"
+    printf "%s\n" "${commands[@]}" | parallel --progress --delay 3 --joblog ../log_dump/joblog.txt -j "$CPU_CORES"
 else
     echo "GNU parallel not found; using xargs without progress tracking."
-    printf "%s\n" "${commands[@]}" | xargs -I CMD -P "$CPU_CORES" bash -c CMD
+    printf "%s\n" "${commands[@]}" | xargs -I CMD -P "$CPU_CORES" bash -c 'sleep 3; CMD'
 fi
 
 echo "All experiments completed."
+
+BOT_TOKEN="7085281831:AAEIlc-9uPbFxHyMUJGdpzMZTDGDbf4OUgI"
+CHAT_ID="119041362"
+MESSAGE="Esperimento batch 2 completato SGAT-4"
+
+curl -s -X POST https://api.telegram.org/bot$BOT_TOKEN/sendMessage \
+     -d chat_id=$CHAT_ID \
+     -d text="$MESSAGE"

@@ -7,7 +7,7 @@ from tqdm import tqdm
 # List of keys to read from dict_args.json
 DICT_ARGS_KEYS = [
     'seed',
-    'k_seed'
+    'k_seed',
     'approach',
     'src_dataset',
     'trg_dataset',
@@ -30,9 +30,9 @@ REPORT_METRICS = [
     'f1_micro'
 ]
 
-def aggregate_metrics(df):
-    grouping_keys = [k for k in DICT_ARGS_KEYS if k != 'seed']
-    
+def aggregate_metrics(df, agg_col):
+    grouping_keys = [k for k in DICT_ARGS_KEYS if k != agg_col]
+
     metric_cols = []
     for m in REPORT_METRICS:
         for t in ['src', 'trg']:
@@ -122,6 +122,8 @@ def main():
                         help='Path to the directory containing all experiment folders.')
     parser.add_argument('--csv-output', type=str, default='results.csv', 
                         help='Optional path to save the full results DataFrame as CSV.')
+    parser.add_argument('--agg-col', type=str, default='seed',
+                        help='Column name to aggregate metrics by')
     parser.add_argument('--csv-output-agg', type=str, default='results_agg.csv',
                         help='Optional path to save the aggregated results DataFrame as CSV.')
 
@@ -132,7 +134,7 @@ def main():
 
     print(f'\nOutput dataframe shape => {df_results.shape}\n', df_results.head(3))
 
-    df_agg = aggregate_metrics(df_results)
+    df_agg = aggregate_metrics(df_results, args.agg_col)
     print(f'\nAggregated DF shape => {df_agg.shape}\n', df_agg.head(3))
 
     if args.csv_output:
