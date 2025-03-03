@@ -121,7 +121,7 @@ class Trainer:
         return approach
             
     def _save_dict_args(self):
-        dm = DirectoryManager(self.args.log_dir)
+        dm = DirectoryManager()
         with open(f'{dm.log_dir}/dict_args.json', 'w') as f:
             json.dump(self.dict_args, f)
     

@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 
 from data.data_module import DataModule
 from util.config import load_config
+from util.directory_manager import DirectoryManager
 from approach import (
     RandomForest,
     XGB,
@@ -64,5 +65,8 @@ def parse_arguments():
         print('WARNING: skipping task on src dataset')
             
     args.appr_type = get_approach_type(args.approach) 
-
+    
+    # Create log dir
+    DirectoryManager(args.log_dir)
+    
     return args
