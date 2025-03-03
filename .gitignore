@@ -236,6 +236,7 @@ $RECYCLE.BIN/
 log_dump/
 result*/
 test*/
+base_model*/
 .vscode/
 joblog.txt
 *.pdf
