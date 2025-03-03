@@ -191,10 +191,3 @@ fi
 
 echo "All experiments completed."
 
-BOT_TOKEN="7085281831:AAEIlc-9uPbFxHyMUJGdpzMZTDGDbf4OUgI"
-CHAT_ID="119041362"
-MESSAGE="Esperimento batch 2 completato SGAT-4"
-
-curl -s -X POST https://api.telegram.org/bot$BOT_TOKEN/sendMessage \
-     -d chat_id=$CHAT_ID \
-     -d text="$MESSAGE"

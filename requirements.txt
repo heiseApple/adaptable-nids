@@ -9,3 +9,4 @@ torch
 torchmetrics
 tqdm
 xgboost
+pyarrow
