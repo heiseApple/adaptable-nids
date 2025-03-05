@@ -18,6 +18,7 @@ train_val_split: 0.9
 # EXPERIMENT
 seed: 0
 gpu: False
+n_thr:
 deterministic: True
 log_dir: "../results"
 n_task: 1

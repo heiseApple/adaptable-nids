@@ -1,4 +1,5 @@
 from util.args_parser import parse_arguments
+from util.config import config_threads
 from util.seed import seed_everything
 
 from util.logger import Logger
@@ -10,8 +11,9 @@ def main():
     # 1. Parse arguments
     args = parse_arguments()
     
-    # 2. Set the seed
+    # 2. Set the seed and number of threads
     seed_everything(args.seed)
+    config_threads(args.n_thr)
     
     # 3. Init the DataManager and load the data
     data_manager = DataManager(args)

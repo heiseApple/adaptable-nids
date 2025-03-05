@@ -28,6 +28,7 @@ def parse_arguments():
     parser.add_argument('--k-seed', type=int, default=cf['seed'], 
                         help='Seed used to sample the k samples in the few-shot case.')
     parser.add_argument('--gpu', action='store_true', default=cf['gpu'], help='Use GPU if available')
+    parser.add_argument('--n-thr', type=int, default=cf['n_thr'], help='Number of threads')
     parser.add_argument('--log-dir', type=str, default=cf['log_dir'], help='Log directory')
     parser.add_argument('--n-tasks', type=int, default=cf['n_task'], choices=[1, 2], 
                         help='with 1 the model is trained on both src and trg dataset at the same time,\
