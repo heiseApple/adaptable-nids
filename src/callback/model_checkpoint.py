@@ -42,7 +42,7 @@ class ModelCheckpoint(Callback):
 
         if improved:
             if self.weights_path is not None:
-                Path(self.weights_path).unlink()  # Remove old checkpoint_ep.pt
+                Path(self.weights_path).unlink(missing_ok=True)  # Remove old checkpoint_ep.pt
             self.best_score = current
             self.weights_path = module.net.save_weights(f'{self.checkpoint_filename}_{epoch+1}')
             
