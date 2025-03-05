@@ -37,11 +37,11 @@ def aggregate_metrics(df, agg_col):
     for m in REPORT_METRICS:
         for t in ['src', 'trg']:
             metric_cols.append(f'{t}_{m}')
-
-    grouped = df.groupby(grouping_keys)[metric_cols].agg(['mean', 'std']).reset_index()
+    
+    grouped = df.groupby(grouping_keys, dropna=False)[metric_cols].agg(['mean', 'std']).reset_index()
     grouped.columns = ['_'.join(col).strip('_') for col in grouped.columns.values]
     
-    count_df = df.groupby(grouping_keys).size().reset_index(name='n_rep')
+    count_df = df.groupby(grouping_keys, dropna=False).size().reset_index(name='n_rep')
     grouped = grouped.merge(count_df, on=grouping_keys, how='left')
     
     return grouped
