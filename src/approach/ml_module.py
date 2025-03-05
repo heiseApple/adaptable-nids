@@ -17,6 +17,7 @@ class MLModule:
 
         self.datamodule = datamodule
         self.seed = kwargs.get('seed', cf['seed'])
+        self.task = 'src'
         self.phase = None
         
         self.callbacks = callbacks if callbacks is not None else []

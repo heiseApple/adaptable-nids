@@ -37,7 +37,8 @@ class DLModule:
         
         self.max_epochs = kwargs.get('max_epochs', cf['max_epochs'])
         self.min_epochs = kwargs.get('min_epochs', cf['min_epochs'])
-                
+            
+        self.task = 'src'    
         self.phase = None
         self.outputs = None
         

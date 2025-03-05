@@ -69,7 +69,12 @@ class RFS(DLModule):
                 
             
     def _predict_step(self, batch_x, batch_y):
-        logits = self.net(batch_x)
+        if self.task == 'src':
+            logits = self.net(batch_x)
+        else:
+            # Task is on trg
+            _, batch_emb = self.net(batch_x, return_feat=True)
+            logits = self.nn_head(batch_emb)
         loss = self.ce_loss(logits, batch_y)
         return loss, logits
         
@@ -91,8 +96,8 @@ class RFS(DLModule):
             embeddings.append(batch_emb)
             labels.append(batch_y)
             
-        # Replace the FullyConnected head with a nearest neighbor 
-        self.net.set_head(NNHead())
+        # Add a new FullyConnected head with a nearest neighbor 
+        self.nn_head = NNHead()
         # Store train embedding and labels
-        self.net.head.fit(x=torch.cat(embeddings), y=torch.cat(labels))
+        self.nn_head.fit(x=torch.cat(embeddings), y=torch.cat(labels))
         
