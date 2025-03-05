@@ -233,15 +233,15 @@ $RECYCLE.BIN/
 *.lnk
 
 # User folders and files
-log_dump/
 result*/
 test*/
 base_model*/
 .vscode/
-joblog.txt
 *.pdf
 *.csv
 *.pkl
 *.npz
+*.log
+*.txt
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,windows
