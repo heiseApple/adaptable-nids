@@ -6,12 +6,12 @@ from util.directory_manager import DirectoryManager
 
 
 class SaveTrainLog(Callback):
-    def __init__(self, filename='epoch_metrics', write_interval=5):
+    def __init__(self, filename='epoch_metrics', write_interval=10):
         """
         Callback that, at the end of each epoch, collects the training and validation
         postfix metrics and appends them as a new row to a file on disk.
         
-        The file is stored in the "epoch_metrics" directory with the name "epoch_metrics.parquet".
+        The file is stored in the "epoch_metrics" directory with the name "epoch_metrics.csv".
         """
         self.filename = filename
         self.write_interval = write_interval
@@ -47,12 +47,12 @@ class SaveTrainLog(Callback):
             self._flush_to_disk()
     
     def _flush_to_disk(self):
-        fullpath = Path(DirectoryManager().log_dir) / f'{self.filename}.parquet'
+        fullpath = Path(DirectoryManager().log_dir) / f'{self.filename}.csv'
         df_new_data = pd.DataFrame(self.metrics_buffer)
         if fullpath.exists():
-            existing_df = pd.read_parquet(fullpath)
+            existing_df = pd.read_csv(fullpath)
             combined = pd.concat([existing_df, df_new_data], ignore_index=True)
-            combined.to_parquet(fullpath, index=False, compression='snappy')
+            combined.to_csv(fullpath, index=False)
         else:
-            df_new_data.to_parquet(fullpath, index=False, compression='snappy')
+            df_new_data.to_csv(fullpath, index=False)
         self.metrics_buffer = []

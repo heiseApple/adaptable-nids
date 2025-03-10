@@ -129,11 +129,11 @@ class Logger:
             if not base_path.exists():
                 continue
         
-            file_path = Path(base_path) / f'{filename}.parquet'
+            file_path = Path(base_path) / f'{filename}.csv'
             if not file_path.exists():
                 continue
             
-            df = pd.read_parquet(file_path)
+            df = pd.read_csv(file_path)
 
             metrics_columns = [col for col in df.columns if col != 'epoch']
             loss_cols = [col for col in metrics_columns if 'loss' in col.lower()]
