@@ -13,14 +13,13 @@ class Lopez17CNN(BaseNetwork):
     From "Network Traffic Classifier With Convolutional and 
     Recurrent Neural Networks for Internet of Things"
     """
-
     def __init__(self, in_channels=1, **kwargs):
         super().__init__()
 
         num_classes = kwargs['num_classes']
         num_pkts = kwargs['num_pkts']
         num_fields = len(kwargs['fields'])
-        out_features_size = 200
+        self.out_features_size = 200
 
         kernel = (4, 2)
         stride = (1, 1)
@@ -60,10 +59,10 @@ class Lopez17CNN(BaseNetwork):
             'conv2': nn.Conv2d(filters[0], filters[1], kernel_size=kernel, stride=stride, padding=0),
             'bn2': nn.BatchNorm2d(filters[1]),
 
-            'fc1': nn.Linear(features_size0 * features_size1 * filters[1], out_features_size),
+            'fc1': nn.Linear(features_size0 * features_size1 * filters[1], self.out_features_size),
         })
         # Init the network with a FullyConnected head
-        self.set_head(FullyConnected(in_features=out_features_size, num_classes=num_classes))
+        self.set_head(FullyConnected(in_features=self.out_features_size, num_classes=num_classes))
 
 
     def forward(self, x, return_feat=False):

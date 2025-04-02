@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from data.data_module import DataModule
+from data.util import DataSplits
 from data.data_reader import get_data_labels
 from util.config import load_config
 
@@ -12,63 +12,45 @@ class DataManager:
     """
     def __init__(self, args):
         self.args = args
-        self.src_dataset = None
-        self.trg_dataset = None
-        
-        self.appr_type = self.args.appr_type
         self.seed = self.args.seed
         
-    def load_datasets(self):
-        """
-        Loads source and target datasets based on provided arguments.
-        """
+    def get_dataset_splits(self):
+        # Loads source and target datasets based on provided arguments.
         dataset_args = {
             'num_pkts': self.args.num_pkts,
             'fields': self.args.fields,
             'is_flat': self.args.is_flat,
             'seed': self.args.seed,
         }
-        self.src_dataset = get_data_labels(dataset=self.args.src_dataset, **dataset_args)
-        if self.args.trg_dataset is not None:
-            self.trg_dataset = get_data_labels(dataset=self.args.trg_dataset, **dataset_args)
-
-    def split_dataset(self):
-        """
-        Splits the source dataset and, if present, also the target dataset.
-        It also sets the number of classes and checks for compatibility.
-        """
-        src_splits, num_classes = self._train_val_test_split(dataset=self.src_dataset)
         
-        if self.trg_dataset:
-            trg_splits, trg_num_classes = self._train_val_test_split(dataset=self.trg_dataset)
+        # Splits the source dataset and, if present, also the target dataset.
+        # It also sets the number of classes and checks for compatibility.
+        src_dataset = get_data_labels(dataset=self.args.src_dataset, **dataset_args)
+        src_splits, num_classes = self._train_val_test_split(dataset=src_dataset)
+        
+        if self.args.trg_dataset is not None:
+            trg_dataset = get_data_labels(dataset=self.args.trg_dataset, **dataset_args)
+            trg_splits, trg_num_classes = self._train_val_test_split(dataset=trg_dataset)
+            
             assert num_classes == trg_num_classes, (
                 'Mismatch between the classes of the source and target datasets'
             )
+            
             # For a few-shot setup (k samples per trg class)
             if self.args.k is not None:
                 x_sampled, y_sampled = self._sample_k_per_class(trg_splits['train'], k=self.args.k)
                 trg_splits['train'] = (x_sampled, y_sampled) 
-                trg_splits['val'] = (x_sampled, y_sampled)
+                trg_splits['val'] = (x_sampled, y_sampled) # Same data used for training
         else:
-            trg_splits = None 
+            trg_splits = None
             
         return src_splits, trg_splits, num_classes
     
-    def get_datamodule(self, train, val, test=None):
-        """Creates the DataModule from the provided splits"""
-        return DataModule(
-            train_dataset=train,
-            val_dataset=val,
-            test_dataset=test,
-            **vars(self.args)
-        )
-
-    def concat_dataset(self, d1, d2):
-        x1, y1 = d1
-        x2, y2 = d2
-        return np.concatenate([x1, x2]), np.concatenate([y1, y2])
     
     def _train_val_test_split(self, dataset):
+        """
+        Splits the dataset into training, validation, and test sets.
+        """
         cf = load_config()
         x = dataset['data']
         y = dataset['labels']
@@ -87,11 +69,12 @@ class DataManager:
             random_state=self.seed,
             stratify=y_train
         )
-        return {
-            'train': (x_train, y_train),
-            'val': (x_val, y_val),
-            'test': (x_test, y_test),
-        }, len(np.unique(y))
+        return DataSplits(
+            train=(x_train, y_train),
+            val=(x_val, y_val),
+            test=(x_test, y_test)
+        ), len(np.unique(y))
+        
         
     def _sample_k_per_class(self, data, k):
         x, y = data
@@ -137,3 +120,4 @@ class DataManager:
 
         # Return the sampled data and labels
         return x[final_indices], y[final_indices]
+    

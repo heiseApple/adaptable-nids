@@ -13,7 +13,7 @@ def get_data_labels(dataset, num_pkts, fields, is_flat, seed):
     """
     Preprocesses a dataset and returns the input features and labels.
 
-    Parameters:
+    Args:
         dataset (str): The name of the dataset to be used.
         num_pkts (int): The number of packets to consider.
         fields (list): List of fields to include in the input features.

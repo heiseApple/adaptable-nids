@@ -45,7 +45,7 @@ class Baseline(DLModule):
         return loss, logits
     
         
-    def _adapt(self, adapt_dataloader, val_dataloader):
+    def _adapt(self, adapt_dataloader, val_dataloader, **kwargs):
         # Update hyperparameters for adaptation
         self.max_epochs = self.adapt_epochs
         self.lr = self.adapt_lr

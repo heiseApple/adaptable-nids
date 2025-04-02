@@ -15,12 +15,12 @@ def main():
     seed_everything(args.seed)
     config_threads(args.n_thr)
     
-    # 3. Init the DataManager and load the data
+    # 3. Init the DataManager and get the data
     data_manager = DataManager(args)
-    data_manager.load_datasets()
+    dataset_splits = data_manager.get_dataset_splits()
     
     # 4. Initialize the Trainer and start the run
-    trainer = Trainer(args, data_manager)
+    trainer = Trainer(args, dataset_splits)
     trainer.run()
     
     # 5. Final logging (metrics, graphs, etc.)

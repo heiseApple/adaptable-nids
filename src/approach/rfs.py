@@ -31,7 +31,7 @@ class RFS(DLModule):
         if self.alpha + self.gamma != 1.0:
             raise ValueError('alpha + gamma should be equal to 1')
 
-        self.ce_loss = nn.CrossEntropyLoss(reduction="mean")
+        self.ce_loss = nn.CrossEntropyLoss(reduction='mean')
         self.kl_loss = DistillKLLoss(T=self.kd_T)
         
         self.teacher = RFSTeacher(
@@ -81,7 +81,7 @@ class RFS(DLModule):
         
         
     @torch.no_grad()
-    def _adapt(self, adapt_dataloader, _):
+    def _adapt(self, adapt_dataloader, val_dataloader, **kwargs):
         self.net.eval()
         
         embeddings, labels = [], []

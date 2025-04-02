@@ -73,6 +73,15 @@ is_distill:
 kd_t: 1
 tacher_path:
 
+# ADDA
+discr_hidden_size: 1024
+wsgrl_alpha: 1.0
+wsgrl_lo: 0.0
+wsgrl_hi: 2.0
+wsgrl_max_iters: 1000
+wsgrl_auto_step: True
+iter_per_epoch: 1000
+
 # RANDOM FOREST
 rf_criterion: 'gini'
 rf_n_estimators: 100

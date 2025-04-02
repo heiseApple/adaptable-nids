@@ -9,6 +9,7 @@ class BaseNetwork(nn.Module, ABC):
     
     def __init__(self):
         super(BaseNetwork, self).__init__()
+        self.out_features_size = None
         self.backbone = None
         self.head = None
 
@@ -46,8 +47,46 @@ class BaseNetwork(nn.Module, ABC):
         """
         if self.backbone is not None:
             for param in self.backbone.parameters():
-                param.requires_grad = True
+                param.requires_grad = False
+                
+    def freeze_net(self):
+        """
+        Freezes all the parameters, preventing gradient updates.
+        """
+        if self.backbone and self.head:
+            for module in [self.backbone, self.head]:
+                for param in module.parameters():
+                    param.requires_grad = False
 
+    def unfreeze_net(self):
+        """
+        Unfreezes the parameters, allowing gradient updates.
+        """
+        if self.backbone and self.head:
+            for module in [self.backbone, self.head]:
+                for param in module.parameters():
+                    param.requires_grad = True
+                    
+    def freeze_bn(self):
+        """
+        Freeze all batch normalization layers in backbone and head.
+        """
+        if self.backbone and self.head:
+            for module in (self.backbone, self.head):
+                for m in module.modules():
+                    if isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+                        m.eval()
+
+    def unfreeze_bn(self):
+        """
+        Unfreeze all batch normalization layers in backbone and head.
+        """
+        if self.backbone and self.head:
+            for module in (self.backbone, self.head):
+                for m in module.modules():
+                    if isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+                        m.train()
+                        
     def save_weights(self, filename):
         """
         Saves the model weights to a specified file path.

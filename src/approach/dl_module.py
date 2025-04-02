@@ -13,7 +13,11 @@ disable_tqdm = not sys.stdout.isatty()
 dl_approaches = {
     'baseline' : 'Baseline',
     'rfs' : 'RFS',
+    'adda' : 'ADDA',
 }
+unsup_approaches = [
+    'adda'
+]
 
 
 class DLModule:
@@ -110,7 +114,7 @@ class DLModule:
         for cb in self.callbacks:
             cb.on_validation_end(self)  
             
-    def adapt(self):
+    def adapt(self, **kwargs):
         self.phase = 'train'
 
         for cb in self.callbacks: 
@@ -119,7 +123,7 @@ class DLModule:
         # Adaptation (on trg dataset) dataloder set by the trainer
         adapt_dataloader = self.datamodule.get_adapt_data() 
         val_dataloader = self.datamodule.get_val_data()
-        self._adapt(adapt_dataloader, val_dataloader)
+        self._adapt(adapt_dataloader, val_dataloader, **kwargs)
 
         for cb in self.callbacks:
             cb.on_adaptation_end(self) 

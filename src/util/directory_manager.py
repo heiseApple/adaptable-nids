@@ -35,17 +35,13 @@ class DirectoryManager:
         self._ensure_directory(full_path)
         return full_path
     
-    def toggle_log_dir(self):
+    def change_log_dir(self, task):
         """
         Updates the log directory path by toggling between 'src' and 'trg' directories.
         """
-        if 'src' in self.log_dir.parts:
-            new_dir = 'trg'
-        elif 'trg' in self.log_dir.parts:
-            new_dir = 'src'
-        else:
-            raise ValueError("The current log_dir does not contain 'src' or 'trg' and cannot be updated.")
+        if task not in ['src', 'trg']:
+            raise ValueError("Task must be either 'src' or 'trg'")
         
-        self.log_dir = self.log_dir.parent / new_dir
+        self.log_dir = self.log_dir.parent / task
         self._ensure_directory(self.log_dir)
         

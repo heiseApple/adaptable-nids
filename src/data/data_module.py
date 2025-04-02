@@ -113,3 +113,4 @@ class DataModule:
         else:
             # For ML approaches
             return self.train_x, self.train_y
+        

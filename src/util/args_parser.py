@@ -9,7 +9,9 @@ from approach import (
     KNN,
     Baseline,
     RFS,
-    get_approach_type
+    ADDA,
+    get_approach_type,
+    is_approach_usup,
 )
 
 
@@ -23,6 +25,7 @@ def parse_arguments():
     parser = KNN.add_appr_specific_args(parser)
     parser = Baseline.add_appr_specific_args(parser)
     parser = RFS.add_appr_specific_args(parser)
+    parser = ADDA.add_appr_specific_args(parser)
     parser = DataModule.add_argparse_args(parser)
     parser.add_argument('--seed', type=int, default=cf['seed'], help='Seed for reproducibility')
     parser.add_argument('--k-seed', type=int, default=cf['seed'], 
@@ -56,6 +59,9 @@ def parse_arguments():
     
     args = parser.parse_args()
     
+    args.appr_type = get_approach_type(args.approach) 
+    args.is_appr_unsup = is_approach_usup(args.approach)
+    
     if args.src_dataset is None:
         raise ValueError(f'Source Dataset is None')
     
@@ -64,8 +70,12 @@ def parse_arguments():
     
     if args.skip_t1 and args.n_tasks==2:
         print('WARNING: skipping task on src dataset')
-            
-    args.appr_type = get_approach_type(args.approach) 
+    
+    if args.appr_type == 'ml' and args.n_tasks > 1:
+        raise ValueError('ML approaches do not support multiple tasks')
+    
+    if args.is_appr_unsup and args.n_tasks != 2:
+        raise ValueError('Unsupervised approaches only support 2 tasks')
     
     # Create log dir
     DirectoryManager(args.log_dir)
