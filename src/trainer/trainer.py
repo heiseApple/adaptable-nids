@@ -48,24 +48,36 @@ class Trainer:
         """
         Handle unsupervised domain adaptation scenario.
         """
-        # Initial source training
-        if not self.args.skip_t1:
-            src_datamodule = src_splits.get_datamodule(**self.dict_args)
-            approach.datamodule = src_datamodule # Supervised data from src
-            print(f'[Trainer] Starting training on source dataset: {self.args.src_dataset}')
+        if self.args.n_tasks == 1:
+            # n_task == 1 -> monolithic training (only for ML semi-sup appoaches)
+            # Combine src_dataset and trg_dataset train/val splits (trg train is unsupervised)
+            combined_train = concat_dataset(src_splits.train, trg_splits.train, unsup='d2')
+            combined_val = concat_dataset(src_splits.val, trg_splits.val)
+            approach.datamodule = DataSplits(
+                train=combined_train,
+                val=combined_val,
+                test=None
+            ).get_datamodule(**self.dict_args)
             self._fit_val(approach)
+            self._cross_dataset_test(approach, src_splits, trg_splits)
+        else:
+            # n_task == 2 -> sequential training
+            if not self.args.skip_t1:
+                # Train and val on src
+                src_datamodule = src_splits.get_datamodule(**self.dict_args)
+                approach.datamodule = src_datamodule # Supervised data from src
+                print(f'[Trainer] Starting training on source dataset: {self.args.src_dataset}')
+                self._fit_val(approach)
 
-        self.dm.change_log_dir(task='trg') # Switch log_dir to trg 
-        
-        # Target adaptation
-        approach = self._reset_approach(weights_path=self.args.weights_path)
-        approach.task = 'trg'
-        approach.datamodule = trg_splits.get_datamodule(**self.dict_args) # Unsupervised data from trg
-        print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
-        self._adapt_val(approach, train_dataloader=src_datamodule.get_train_data())
-        
-        # Cross-domain testing
-        self._cross_dataset_test(approach, src_splits, trg_splits)
+            self.dm.change_log_dir(task='trg') # Switch log_dir to trg 
+            
+            # Target adaptation
+            approach = self._reset_approach(weights_path=self.args.weights_path)
+            approach.task = 'trg'
+            approach.datamodule = trg_splits.get_datamodule(**self.dict_args) # Unsupervised data from trg
+            print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
+            self._adapt_val(approach, train_dataloader=src_datamodule.get_train_data())
+            self._cross_dataset_test(approach, src_splits, trg_splits) 
             
             
     def _handle_sup_src_sup_trg(self, approach, src_splits, trg_splits):
@@ -100,8 +112,6 @@ class Trainer:
             approach.datamodule = trg_splits.get_datamodule(**self.dict_args)
             print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
             self._adapt_val(approach)
-            
-            # Cross-domain testing
             self._cross_dataset_test(approach, src_splits, trg_splits)
         
         

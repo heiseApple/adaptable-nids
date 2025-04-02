@@ -7,8 +7,12 @@ ml_approaches = {
     'random_forest' : 'RandomForest',
     'xgb' : 'XGB',
     'knn' : 'KNN',
+    'label_propagation' : 'LabelPropagation',
+    'label_spreading' : 'LabelSpreading',
 }
-
+ml_unsup_approaches = [
+    'label_propagation', 'label_spreading'
+]
 
 class MLModule:
     

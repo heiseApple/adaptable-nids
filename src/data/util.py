@@ -61,8 +61,14 @@ class DataSplits:
             **kwargs
         )
         
-def concat_dataset(d1, d2):
-        x1, y1 = d1
-        x2, y2 = d2
-        return np.concatenate([x1, x2]), np.concatenate([y1, y2])
+def concat_dataset(d1, d2, unsup=None):
+    x1, y1 = d1
+    x2, y2 = d2
+    
+    if unsup == 'd1':
+        y1 = np.full_like(y1, -1)
+    elif unsup == 'd2':
+        y2 = np.full_like(y2, -1)
+    
+    return np.concatenate([x1, x2]), np.concatenate([y1, y2])
         

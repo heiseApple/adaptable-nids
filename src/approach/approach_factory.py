@@ -1,5 +1,5 @@
-from approach.ml_module import MLModule, ml_approaches
-from approach.dl_module import DLModule, dl_approaches, unsup_approaches
+from approach.ml_module import MLModule, ml_approaches, ml_unsup_approaches
+from approach.dl_module import DLModule, dl_approaches, dl_unsup_approaches
 from util.config import load_config
 from callback import (
     EarlyStopping,
@@ -19,7 +19,7 @@ def get_approach_type(approach_name):
         raise ValueError(f"Approach '{approach_name}' not found in ML or DL approaches.")
     
 def is_approach_usup(approach_name):
-    return approach_name in unsup_approaches
+    return approach_name in dl_unsup_approaches + ml_unsup_approaches
 
 def get_approach(approach_name, datamodule=None, fs_task=False, **kwargs):
     callbacks = [SaveOutputs(), TimeMeasurement()] # Base callbacks for both ML and DL approaches

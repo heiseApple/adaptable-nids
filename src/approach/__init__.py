@@ -3,6 +3,8 @@ from .dl_module import DLModule
 from .random_forest import RandomForest
 from .xgb import XGB
 from .knn import KNN
+from .label_propagation import LabelPropagation
+from .label_spreading import LabelSpreading
 from .baseline import Baseline
 from .rfs import RFS
 from .adda import ADDA

@@ -7,6 +7,8 @@ from approach import (
     RandomForest,
     XGB,
     KNN,
+    LabelPropagation,
+    LabelSpreading,
     Baseline,
     RFS,
     ADDA,
@@ -23,6 +25,8 @@ def parse_arguments():
     parser = RandomForest.add_appr_specific_args(parser)
     parser = XGB.add_appr_specific_args(parser)
     parser = KNN.add_appr_specific_args(parser)
+    parser = LabelPropagation.add_appr_specific_args(parser)
+    parser = LabelSpreading.add_appr_specific_args(parser)
     parser = Baseline.add_appr_specific_args(parser)
     parser = RFS.add_appr_specific_args(parser)
     parser = ADDA.add_appr_specific_args(parser)
@@ -68,15 +72,15 @@ def parse_arguments():
     if args.trg_dataset==args.src_dataset:
         raise ValueError(f"Target dataset cannot be the same as source dataset: '{args.src_dataset}")
     
-    if args.skip_t1 and args.n_tasks==2:
-        print('WARNING: skipping task on src dataset')
-    
     if args.appr_type == 'ml' and args.n_tasks > 1:
         raise ValueError('ML approaches do not support multiple tasks')
     
-    if args.is_appr_unsup and args.n_tasks != 2:
-        raise ValueError('Unsupervised approaches only support 2 tasks')
+    if args.is_appr_unsup and args.appr_type == 'dl' and args.n_tasks != 2:
+        raise ValueError('Unsupervised DL approaches only support 2 tasks')
     
+    if args.skip_t1 and args.n_tasks==2:
+        print('WARNING: skipping task on src dataset')
+        
     # Create log dir
     DirectoryManager(args.log_dir)
     

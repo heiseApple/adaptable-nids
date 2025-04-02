@@ -21,10 +21,10 @@ class KNN(MLModule):
         super().__init__(**kwargs)
         cf = load_config()
 
-        self.n_neighbors = kwargs.get('n_neighbors', cf['knn_n_neighbors'])
-        self.weights = kwargs.get('weights', cf['knn_weights'])
-        self.p = kwargs.get('p', cf['knn_p'])
-        self.metric = kwargs.get('metric', cf['knn_metric'])
+        self.n_neighbors = kwargs.get('knn_n_neighbors', cf['knn_n_neighbors'])
+        self.weights = kwargs.get('knn_weights', cf['knn_weights'])
+        self.p = kwargs.get('knn_p', cf['knn_p'])
+        self.metric = kwargs.get('knn_metric', cf['knn_metric'])
         
         self.classifier = KNeighborsClassifier(
             n_neighbors=self.n_neighbors,

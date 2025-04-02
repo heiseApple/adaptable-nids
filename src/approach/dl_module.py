@@ -15,7 +15,7 @@ dl_approaches = {
     'rfs' : 'RFS',
     'adda' : 'ADDA',
 }
-unsup_approaches = [
+dl_unsup_approaches = [
     'adda'
 ]
 

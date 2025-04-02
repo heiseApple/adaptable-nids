@@ -97,3 +97,18 @@ knn_n_neighbors: 5
 knn_weights: 'uniform'
 knn_p: 2
 knn_metric: 'minkowski'
+
+# LABEL PROPAGATION
+lp_kernel: 'knn'
+lp_gamma: 20
+lp_n_neighbors: 5
+lp_max_iter: 1000
+lp_tol: 0.001
+
+# LABEL SPREADING
+ls_kernel: 'knn'
+ls_gamma: 20
+ls_n_neighbors: 5
+ls_alpha: 0.2
+ls_max_iter: 30
+ls_tol: 0.001

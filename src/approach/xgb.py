@@ -21,7 +21,7 @@ class XGB(MLModule):
 
         self.n_estimators = kwargs.get('xgb_n_estimators', cf['xgb_n_estimators'])
         self.max_depth = kwargs.get('xgb_max_depth', cf['xgb_max_depth'])
-        self.eval_metric = kwargs.get('eval_metric', cf['xgb_eval_metric'])
+        self.eval_metric = kwargs.get('xgb_eval_metric', cf['xgb_eval_metric'])
         
         self.classifier = XGBClassifier(
             use_label_encoder=True,
@@ -36,7 +36,7 @@ class XGB(MLModule):
         parser = MLModule.add_appr_specific_args(parent_parser)
         parser.add_argument('--xgb-n-estimators', type=int, default=cf['xgb_n_estimators'])
         parser.add_argument('--xgb-max-depth', type=int, default=cf['xgb_max_depth'])
-        parser.add_argument('--eval-metric', type=str, default=cf['xgb_eval_metric'])
+        parser.add_argument('--xgb-eval-metric', type=str, default=cf['xgb_eval_metric'])
         return parser
     
     def _fit(self, data, labels):
