@@ -243,5 +243,6 @@ base_model*/
 *.npz
 *.log
 *.txt
+*.nfs*
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,windows
