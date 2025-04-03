@@ -38,7 +38,7 @@ The parsing logic is defined in [`args_parser.py`](src/util/args_parser.py).
    `1`: The model is trained on both source and target datasets at the same time.  
    `2`: The model is first trained on the source dataset, then on the target dataset.  
 - `--network [str]`: Network to use. The value must match the `.py` filename in [`src/network/`](src/network/) that implements the network (e.g., `lopez17cnn`). 
-- `--weights-path [str]`: Path to the `.pt` file containing the weights for the network.  
+- `--ckpt-path [str]`: Path to the `.pt` file containing the state of an approach.  
 - `--skip-t1`: Skip the first task on the source dataset (used only when `--n-tasks 2`).  
 - `--k [int]`: Number of shots for the target dataset. If not specified, the entire training partition of the target dataset is used.
 

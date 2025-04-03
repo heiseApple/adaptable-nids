@@ -14,7 +14,7 @@ class ModelCheckpoint(Callback):
         self.monitor = monitor
         self.mode = mode
         self.best_score = None
-        self.weights_path = None
+        self.ckpt_path = None
         self.checkpoint_filename = 'checkpoint'  # Base name for the checkpoint file
 
     def on_epoch_end(self, module, epoch):
@@ -41,30 +41,30 @@ class ModelCheckpoint(Callback):
                 improved = True
 
         if improved:
-            if self.weights_path is not None:
-                Path(self.weights_path).unlink(missing_ok=True)  # Remove old checkpoint_ep.pt
+            if self.ckpt_path is not None:
+                Path(self.ckpt_path).unlink(missing_ok=True)  # Remove old checkpoint_ep.pt
             self.best_score = current
-            self.weights_path = module.net.save_weights(f'{self.checkpoint_filename}_{epoch+1}')
+            self.ckpt_path = module.save_checkpoint(f'{self.checkpoint_filename}_{epoch+1}')
             
-    def _load_weighs(self, module, phase):
-        if self.weights_path is None:
-            print(f'[ModelCheckpoint] Checkpoint path is None, using current weights.')
+    def _load_checkpoint(self, module, phase):
+        if self.ckpt_path is None:
+            print(f'[ModelCheckpoint] Checkpoint path is None, using current state.')
             return
         
-        if Path(self.weights_path).exists():
-            print(f"[ModelCheckpoint] Loading checkpoint from {self.weights_path} for {phase}.")
-            module.net.load_weights(self.weights_path)
+        if Path(self.ckpt_path).exists():
+            print(f"[ModelCheckpoint] Loading checkpoint from {self.ckpt_path} for {phase}.")
+            module.load_checkpoint(self.ckpt_path)
         else:
-            raise FileNotFoundError(f'Checkpoint file not found at {self.weights_path}')
+            raise FileNotFoundError(f'Checkpoint file not found at {self.ckpt_path}')
 
     def on_validation_start(self, module):
         """
         At the start of validation, loads the checkpoint if it exists.
         """
-        self._load_weighs(module, phase='validation')
+        self._load_checkpoint(module, phase='validation')
         
     def on_test_start(self, module):
         """
         At the start of testing, loads the checkpoint if it exists.
         """
-        self._load_weighs(module, phase='testing')
+        self._load_checkpoint(module, phase='testing')

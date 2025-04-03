@@ -18,6 +18,7 @@ class DataModule:
         self.test_x, self.test_y = test_dataset or (None, None)
         
         self.approach_type = kwargs.get('appr_type', None)
+        self.seed = kwargs.get('seed', cf['seed'])
         
         
     @staticmethod
@@ -53,6 +54,7 @@ class DataModule:
                 TensorDataset(data_tensor, labels_tensor),
                 batch_size=self.batch_size,
                 shuffle=True,
+                generator=torch.Generator().manual_seed(self.seed),
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
             )
@@ -71,6 +73,7 @@ class DataModule:
                 TensorDataset(data_tensor, labels_tensor),
                 batch_size=self.batch_size,
                 shuffle=False,
+                generator=torch.Generator().manual_seed(self.seed),
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
             )
@@ -89,6 +92,7 @@ class DataModule:
                 TensorDataset(data_tensor, labels_tensor),
                 batch_size=self.batch_size,
                 shuffle=False,
+                generator=torch.Generator().manual_seed(self.seed),
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
             )
@@ -107,6 +111,7 @@ class DataModule:
                 TensorDataset(data_tensor, labels_tensor),
                 batch_size=self.adapt_batch_size,
                 shuffle=True,
+                generator=torch.Generator().manual_seed(self.seed),
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
             )

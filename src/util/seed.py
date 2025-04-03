@@ -40,6 +40,7 @@ def seed_everything(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = cf['deterministic']
+    torch.backends.cudnn.benchmark = cf['benchmark']
     return seed
 
 def _select_seed_randomly(min_seed_value: int = 0, max_seed_value: int = 255) -> int:

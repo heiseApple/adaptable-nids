@@ -1,36 +1,29 @@
 import sys
-from torch import nn
-from tqdm import tqdm
-from copy import deepcopy
 import torch
+from torch import nn
+from torchmetrics import Accuracy, F1Score
+from tqdm import tqdm
 
 from approach.dl_module import DLModule
 from data.util import InfiniteDataIterator
-from module.domain_discriminator import DomainDiscriminator
-from module.gradient_reverse_function import WarmStartGradientReverseLayer
-from module.loss import DomainAdversarialLoss
+from module.loss import MinimumClassConfusionLoss
 from util.config import load_config
 
 disable_tqdm = not sys.stdout.isatty()
 
 
-class ADDA(DLModule):
+class MCC(DLModule):
     """
-    [[Link to Source Code]](https://github.com/thuml/Transfer-Learning-Library/blob/master/examples/domain_adaptation/image_classification/adda.py)
-    ADDA is a class that implements the ADDA (Adversarial Discriminative Domain Adaptation) approach for domain adaptation,
-    as described in "Adversarial Discriminative Domain Adaptation".
+    [[Link to Source Code]](https://github.com/thuml/Transfer-Learning-Library/blob/master/examples/domain_adaptation/image_classification/mcc.py)
+    MCC is a class that implements the approach described in "Minimum Class Confusion for Versatile Domain Adaptation" for domain adaptation.
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         cf = load_config()
                 
         self.ce_loss = nn.CrossEntropyLoss(reduction='mean')
-        self.discr_hidden_size = kwargs.get('discr_hidden_size', cf['discr_hidden_size'])
-        self.wsgrl_alpha = kwargs.get('wsgrl_alpha', cf['wsgrl_alpha'])
-        self.wsgrl_lo = kwargs.get('wsgrl_lo', cf['wsgrl_lo'])
-        self.wsgrl_hi = kwargs.get('wsgrl_hi', cf['wsgrl_hi'])
-        self.wsgrl_max_iters = kwargs.get('wsgrl_max_iters', cf['wsgrl_max_iters'])
-        self.wsgrl_auto_step = kwargs.get('wsgrl_auto_step', cf['wsgrl_auto_step'])
+        self.mcc_t = kwargs.get('mcc_t', cf['mcc_t'])
+        self.mcc_alpha = kwargs.get('mcc_alpha', cf['mcc_alpha'])
         self.adapt_lr = kwargs.get('adapt_lr', cf['adapt_lr'])
         self.adapt_epochs = kwargs.get('adapt_epochs', cf['adapt_epochs'])
         self.iter_per_epoch = kwargs.get('iter_per_epoch', cf['iter_per_epoch'])
@@ -40,12 +33,8 @@ class ADDA(DLModule):
     def add_appr_specific_args(parent_parser):
         cf = load_config()
         parser = DLModule.add_appr_specific_args(parent_parser)
-        parser.add_argument('--discr-hidden-size', type=int, default=cf['discr_hidden_size'])
-        parser.add_argument('--wsgrl-alpha', type=float, default=cf['wsgrl_alpha'])
-        parser.add_argument('--wsgrl-lo', type=float, default=cf['wsgrl_lo'])
-        parser.add_argument('--wsgrl-hi', type=float, default=cf['wsgrl_hi'])
-        parser.add_argument('--wsgrl-max-iters', type=int, default=cf['wsgrl_max_iters'])
-        parser.add_argument('--wsgrl-auto-step', action='store_true', default=cf['wsgrl_auto_step'])
+        parser.add_argument('--mcc-t', type=float, default=cf['mcc_t'])
+        parser.add_argument('--mcc-alpha', type=float, default=cf['mcc_alpha'])
         parser.add_argument('--adapt-lr', type=float, default=cf['adapt_lr'])
         parser.add_argument('--adapt-epochs', type=int, default=cf['adapt_epochs'])
         parser.add_argument('--iter-per-epoch', type=int, default=cf['iter_per_epoch'])
@@ -62,47 +51,36 @@ class ADDA(DLModule):
         logits = self.net(batch_x)
         loss = self.ce_loss(logits, batch_y)
         return loss, logits
-    
-    
+        
+
     def _adapt(self, adapt_dataloader, val_dataloader, train_dataloader):
+        accuracy = Accuracy(num_classes=self.num_classes, task='multiclass').to(self.device)
+        f1_score = F1Score(num_classes=self.num_classes, average='macro', task='multiclass').to(self.device)
+        
         # Infinite iterators
         src_dataloader = InfiniteDataIterator(train_dataloader, device=self.device) 
         trg_dataloader = InfiniteDataIterator(adapt_dataloader, device=self.device) 
         
-        # Source network is completely frozen
-        source_net = deepcopy(self.net)
-        source_net.freeze_net()
-        source_net.freeze_bn()
-        
-        domain_discriminator = DomainDiscriminator(
-            in_feature=self.net.out_features_size,
-            hidden_size=self.discr_hidden_size,
-        )
-        
-        # Domain adaptation loss function
-        wsgrl = WarmStartGradientReverseLayer(
-            alpha=self.wsgrl_alpha, lo=self.wsgrl_lo, hi=self.wsgrl_hi, 
-            max_iters=self.wsgrl_max_iters, auto_step=self.wsgrl_auto_step
-        )
-        da_loss = DomainAdversarialLoss(domain_discriminator, grl=wsgrl).to(self.device)
+        # Minimum class confusion loss function
+        mcc_loss = MinimumClassConfusionLoss(T=self.mcc_t)
         
         self.lr = self.adapt_lr
-        params = list(self.net.backbone.parameters()) + list(domain_discriminator.parameters())
-        self.configure_optimizers(params=params)
+        self.configure_optimizers()
         
         # Adaptation loop       
         for epoch in range(self.adapt_epochs):
             self.net.train()
-            da_loss.train()
             
             for cb in self.callbacks:
                 cb.on_epoch_start(self, epoch)
                 
             running_loss = 0.0
-            
+            all_labels, all_preds = [], []
+
             postfix = {
-                'DA loss': f'{self.epoch_outputs["train_loss"]:.4f}', 
-                'discr acc':  f'{self.epoch_outputs["train_accuracy"]:.4f}',
+                'trn loss': f'{self.epoch_outputs["train_loss"]:.4f}', 
+                'trn acc':  f'{self.epoch_outputs["train_accuracy"]:.4f}',
+                'trn f1':   f'{self.epoch_outputs["train_f1_score_macro"]:.4f}',
                 f'val {self.sch_monitor}': f'{val_score:.4f}'
             } if epoch > 0 else {} 
             adapt_loop = tqdm(
@@ -111,15 +89,21 @@ class ADDA(DLModule):
             )
             for i in adapt_loop:
                 # Get batches
-                batch_x_s, _ = next(src_dataloader)
+                batch_x_s, batch_y_s = next(src_dataloader)
                 batch_x_t, _ = next(trg_dataloader)
-                batch_x_s, batch_x_t = batch_x_s.to(self.device), batch_x_t.to(self.device)
+                batch_x_s, batch_y_s = batch_x_s.to(self.device), batch_y_s.to(self.device).long()
+                batch_x_t = batch_x_t.to(self.device)
                 
-                # Embedding and domain adaptation loss
-                _, batch_emb_s = source_net(batch_x_s, return_feat=True)
-                _, batch_emb_t = self.net(batch_x_t, return_feat=True)
+                # Compute logits
+                batch_size_s, batch_size_t = batch_x_s.size(0), batch_x_t.size(0)
+                batch_x = torch.cat((batch_x_s, batch_x_t), dim=0)
+                logits = self.net(batch_x)
+                logits_s, logits_t = torch.split(logits, [batch_size_s, batch_size_t], dim=0)
                 
-                loss = da_loss(f_s=batch_emb_s, f_t=batch_emb_t)
+                # Compute losses
+                classification_loss = self.ce_loss(logits_s, batch_y_s)
+                transfer_loss = mcc_loss(logits_t)
+                loss = classification_loss + transfer_loss * self.mcc_alpha
                 
                 # Backward pass
                 self.optimizer.zero_grad()
@@ -127,12 +111,20 @@ class ADDA(DLModule):
                 self.optimizer.step()
                 running_loss += loss.item()
                 
+                # Metrics
+                preds_s = torch.argmax(logits_s, dim=1)
+                all_labels.append(batch_y_s)
+                all_preds.append(preds_s)
+                
             # Validation on adapt epoch end
             self.epoch_outputs = self._predict(val_dataloader, on_train_epoch_end=True)
             val_score = self.epoch_outputs[self.sch_monitor]
             
             self.epoch_outputs['train_loss'] = running_loss / self.iter_per_epoch
-            self.epoch_outputs['train_accuracy'] = da_loss.domain_discriminator_accuracy
+            self.epoch_outputs['train_accuracy'] = accuracy(
+                torch.cat(all_preds), torch.cat(all_labels)).item()
+            self.epoch_outputs['train_f1_score_macro'] = f1_score(
+                torch.cat(all_preds), torch.cat(all_labels)).item()
             
             for cb in self.callbacks:
                 cb.on_epoch_end(self, epoch)
@@ -141,5 +133,4 @@ class ADDA(DLModule):
                 break  # Early stopping
             
             self.run_scheduler_step(monitor_value=val_score, epoch=epoch + 1)
-
-        
+            

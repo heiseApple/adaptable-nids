@@ -62,9 +62,9 @@ class Trainer:
             self._cross_dataset_test(approach, src_splits, trg_splits)
         else:
             # n_task == 2 -> sequential training
+            src_datamodule = src_splits.get_datamodule(**self.dict_args)
             if not self.args.skip_t1:
                 # Train and val on src
-                src_datamodule = src_splits.get_datamodule(**self.dict_args)
                 approach.datamodule = src_datamodule # Supervised data from src
                 print(f'[Trainer] Starting training on source dataset: {self.args.src_dataset}')
                 self._fit_val(approach)
@@ -72,7 +72,7 @@ class Trainer:
             self.dm.change_log_dir(task='trg') # Switch log_dir to trg 
             
             # Target adaptation
-            approach = self._reset_approach(weights_path=self.args.weights_path)
+            approach = self._reset_approach(checkpoint_path=self.args.ckpt_path)
             approach.task = 'trg'
             approach.datamodule = trg_splits.get_datamodule(**self.dict_args) # Unsupervised data from trg
             print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
@@ -107,7 +107,7 @@ class Trainer:
             self.dm.change_log_dir(task='trg') # Switch the log_dir to trg 
             
             # Target adaptation
-            approach = self._reset_approach(weights_path=self.args.weights_path)
+            approach = self._reset_approach(checkpoint_path=self.args.ckpt_path)
             approach.task = 'trg'
             approach.datamodule = trg_splits.get_datamodule(**self.dict_args)
             print(f'[Trainer] Starting training on target dataset: {self.args.trg_dataset}')
@@ -141,15 +141,15 @@ class Trainer:
             approach.datamodule.set_test_dataset(test_dataset)     
         approach.test()
      
-    def _reset_approach(self, weights_path=None):        
+    def _reset_approach(self, checkpoint_path=None):        
         approach = get_approach(
             approach_name=self.args.approach, 
             fs_task=self.args.k is not None, 
             **self.dict_args
         )
-        # Loads weights from the first task or from weights_path
-        approach.net.load_weights(weights_path or self.dm.checkpoint_path) 
-        print(f'[Trainer] Loaded network weights from {weights_path or self.dm.checkpoint_path}')
+        # Loads checkpoint from the first task or from checkpoint_path
+        approach.load_checkpoint(checkpoint_path or self.dm.checkpoint_path) 
+        print(f'[Trainer] Loaded approach state from {checkpoint_path or self.dm.checkpoint_path}')
         return approach
             
     def _save_dict_args(self):

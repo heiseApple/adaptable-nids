@@ -16,7 +16,7 @@ disable_tqdm = not sys.stdout.isatty()
 class RFS(DLModule):
     """
     [[Link to Source Code]](https://github.com/RL-VIG/LibFewShot)
-    RFS is a class that implements the RFS (Rethinking Few-Shot) algorithm for few-shot learning,
+    RFS is a class that implements the RFS (Rethinking Few-Shot) approach for few-shot learning,
     as described in "Rethinking Few-Shot Image Classification: a Good Embedding Is All You Need?".
     """
     def __init__(self, **kwargs):

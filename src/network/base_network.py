@@ -96,8 +96,7 @@ class BaseNetwork(nn.Module, ABC):
         dm = DirectoryManager()
         path = dm.mkdir('network_weights')
         weights_path = f'{path}/{filename}.pt'
-        dm.checkpoint_path = weights_path
-        torch.save(self.state_dict(), weights_path)
+        torch.save({'net_state_dict' : self.state_dict()}, weights_path)
         return weights_path
 
     def load_weights(self, path):
@@ -106,7 +105,7 @@ class BaseNetwork(nn.Module, ABC):
         """
         if path is None:
             raise ValueError('The path to the weights file must be specified.')
-        self.load_state_dict(torch.load(path))
+        self.load_state_dict(torch.load(path)['net_state_dict'])
         # for name, param in self.named_parameters():
         #     print(name, param.device, torch.sum(param).item())
         

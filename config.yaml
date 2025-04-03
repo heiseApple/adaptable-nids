@@ -20,10 +20,12 @@ seed: 0
 gpu: False
 n_thr:
 deterministic: True
+benchmark: False
 log_dir: "../results"
 n_task: 1
 skip_t1:
 approach:
+ckpt_path:
 k:
 
 # DL TRAINING
@@ -62,7 +64,6 @@ pin_memory: True
 
 # DL NETWORK
 network: 'lopez17cnn'
-weights_path:
 net_scale: 1
 num_classes: 0
 
@@ -81,6 +82,10 @@ wsgrl_hi: 2.0
 wsgrl_max_iters: 1000
 wsgrl_auto_step: True
 iter_per_epoch: 1000
+
+# MCC
+mcc_t: 2.5
+mcc_alpha: 1
 
 # RANDOM FOREST
 rf_criterion: 'gini'

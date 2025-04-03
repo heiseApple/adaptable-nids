@@ -101,3 +101,39 @@ class DomainAdversarialLoss(nn.Module):
             else:
                 raise ValueError(f'Unsupported reduction mode: {self.reduction}')
             
+            
+class MinimumClassConfusionLoss(nn.Module):
+    """
+    Minimum Class Confusion loss minimizes the class confusion in the target predictions.
+    Proposed in `Minimum Class Confusion for Versatile Domain Adaptation (ECCV 2020) <https://arxiv.org/abs/1912.03699>`_
+    [[Link to Source Code]](https://github.com/thuml/Transfer-Learning-Library/blob/master/tllib/self_training/mcc.py#L17)
+    """
+    def __init__(self, T: float):
+        super(MinimumClassConfusionLoss, self).__init__()
+        self.T = T
+
+    def forward(self, logits):
+        batch_size, num_classes = logits.shape
+        
+        preds = torch.softmax(logits / self.T, dim=1)         # shape: [batch_size, num_classes]
+        log_preds = torch.log_softmax(logits / self.T, dim=1) # shape: [batch_size, num_classes]
+        
+        # Entropy = - \sum p(x) log p(x)
+        with torch.no_grad():
+            entropy = -(preds * log_preds).sum(dim=1) # shape: [batch_size]
+            # Compute the entropy weight (1 + e^{-entropy}), then normalize by sum
+            entropy_weight = 1.0 + torch.exp(-entropy)
+            entropy_weight = (batch_size * entropy_weight / entropy_weight.sum()).unsqueeze(1)
+            # shape of entropy_weight: [batch_size, 1]
+        
+        # Compute the class confusion matrix = P^T * P, weighed by the entropy weights
+        # where P = softmax(logits)
+        class_confusion_matrix = (preds * entropy_weight).transpose(0, 1).mm(preds)
+        # Normalize each row
+        class_confusion_matrix = class_confusion_matrix / class_confusion_matrix.sum(dim=1, keepdim=True)
+        
+        # MCC loss = (sum of matrix - trace of matrix) / num_classes
+        # trace is the sum of diagonal elements
+        mcc_loss = (class_confusion_matrix.sum() - class_confusion_matrix.trace()) / num_classes
+        return mcc_loss            
+    
