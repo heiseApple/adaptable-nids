@@ -39,6 +39,7 @@ class RFS(DLModule):
             is_distill=self.is_distill, 
             teacher_path=self.teacher_path
         )
+        self.nn_head = None
         # RFS freezes the backbone during the adaptation phase
         self.callbacks.append(FreezeBackbone())
         
@@ -96,7 +97,7 @@ class RFS(DLModule):
             embeddings.append(batch_emb)
             labels.append(batch_y)
             
-        # Add a new FullyConnected head with a nearest neighbor 
+        # Add a new nearest neighbor head 
         self.nn_head = NNHead()
         # Store train embedding and labels
         self.nn_head.fit(x=torch.cat(embeddings), y=torch.cat(labels))
